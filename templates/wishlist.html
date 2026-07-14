@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Wishlist - Galaxy Match{% endblock %}
+
+{% block content %}
+<section class="gm-results-hero">
+  <div class="gm-container">
+    <a href="{{ url_for('home') }}" class="gm-back-link"><i class="bi bi-arrow-left"></i> Home</a>
+    <span class="gm-eyebrow">Saved phones</span>
+    <h1 class="gm-results-title">Your Wishlist</h1>
+    <p class="gm-results-sub">Phones you saved with the heart icon stay here on this device.</p>
+  </div>
+</section>
+
+<section class="gm-section">
+  <div class="gm-container">
+    <div id="gm-wishlist-content"></div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script id="all-wishlist-phones-data" type="application/json">{{ phones|tojson }}</script>
+<script src="{{ url_for('static', filename='js/wishlist.js') }}"></script>
+{% endblock %}

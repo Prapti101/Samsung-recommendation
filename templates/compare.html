@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Compare Galaxy Phones — Galaxy Match{% endblock %}
+
+{% block content %}
+<section class="gm-results-hero gm-results-hero--compare">
+  <div class="gm-container">
+    <a href="{{ url_for('home') }}" class="gm-back-link"><i class="bi bi-arrow-left"></i> Home</a>
+    <span class="gm-eyebrow">Side by side</span>
+    <h1 class="gm-results-title">Compare two Galaxy phones</h1>
+    <p class="gm-results-sub">Pick any two models from the full lineup to see specs and scores head-to-head.</p>
+  </div>
+</section>
+
+<section class="gm-section">
+  <div class="gm-container">
+
+    <div class="gm-compare-pickers">
+      <select class="form-select gm-select" id="picker-a">
+        <option value="">Select first phone…</option>
+        {% for p in phones %}
+        <option value="{{ p.phone_id }}" {% if phone_a and phone_a.phone_id == p.phone_id %}selected{% endif %}>{{ p.model }} — ₹{{ '{:,}'.format(p.price_inr) }}</option>
+        {% endfor %}
+      </select>
+      <div class="gm-vs-badge">VS</div>
+      <select class="form-select gm-select" id="picker-b">
+        <option value="">Select second phone…</option>
+        {% for p in phones %}
+        <option value="{{ p.phone_id }}" {% if phone_b and phone_b.phone_id == p.phone_id %}selected{% endif %}>{{ p.model }} — ₹{{ '{:,}'.format(p.price_inr) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div id="gm-compare-result">
+      {% if phone_a and phone_b %}
+        {% include "_compare_table.html" %}
+      {% else %}
+        <div class="gm-empty-state">
+          <i class="bi bi-arrow-left-right"></i>
+          <h3>Choose two phones to compare</h3>
+          <p>Pick any two Galaxy models above and we'll break down every spec and score.</p>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script id="all-phones-data" type="application/json">{{ phones|tojson }}</script>
+<script src="{{ url_for('static', filename='js/compare.js') }}"></script>
+{% endblock %}

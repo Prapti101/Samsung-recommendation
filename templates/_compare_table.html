@@ -1,0 +1,45 @@
+<div class="gm-compare-card-heads">
+  <div class="gm-compare-head">
+    <h3>{{ phone_a.model }}</h3>
+    <div class="gm-compare-price">₹{{ '{:,}'.format(phone_a.price_inr) }}</div>
+  </div>
+  <div class="gm-compare-head gm-compare-head--vs">vs</div>
+  <div class="gm-compare-head">
+    <h3>{{ phone_b.model }}</h3>
+    <div class="gm-compare-price">₹{{ '{:,}'.format(phone_b.price_inr) }}</div>
+  </div>
+</div>
+
+<div class="gm-compare-scores">
+  {% for key, label, icon in [('camera_score','Camera','📸'), ('performance_score','Performance','⚡'), ('battery_score','Battery','🔋'), ('value_score','Value','💰')] %}
+  <div class="gm-compare-score-row">
+    <span class="gm-compare-score-num {% if phone_a[key] >= phone_b[key] %}gm-win{% endif %}">{{ phone_a[key] }}</span>
+    <div class="gm-compare-score-mid">
+      <span>{{ icon }} {{ label }}</span>
+      <div class="gm-compare-dualbar">
+        <div class="gm-compare-dualbar-fill gm-compare-dualbar-fill--a" style="width:{{ (phone_a[key]*5)|round|int }}%"></div>
+        <div class="gm-compare-dualbar-fill gm-compare-dualbar-fill--b" style="width:{{ (phone_b[key]*5)|round|int }}%"></div>
+      </div>
+    </div>
+    <span class="gm-compare-score-num {% if phone_b[key] >= phone_a[key] %}gm-win{% endif %}">{{ phone_b[key] }}</span>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="gm-table-wrap">
+  <table class="gm-table gm-table--compare">
+    <tbody>
+      <tr><td class="gm-spec-label">Processor</td><td>{{ phone_a.processor }}</td><td>{{ phone_b.processor }}</td></tr>
+      <tr><td class="gm-spec-label">RAM / Storage</td><td>{{ phone_a.ram_gb }}GB / {{ phone_a.storage_gb }}GB</td><td>{{ phone_b.ram_gb }}GB / {{ phone_b.storage_gb }}GB</td></tr>
+      <tr><td class="gm-spec-label">Battery</td><td>{{ phone_a.battery_mah }}mAh · {{ phone_a.charging_w }}W</td><td>{{ phone_b.battery_mah }}mAh · {{ phone_b.charging_w }}W</td></tr>
+      <tr><td class="gm-spec-label">Main Camera</td><td>{{ phone_a.main_camera_mp }}MP</td><td>{{ phone_b.main_camera_mp }}MP</td></tr>
+      <tr><td class="gm-spec-label">Ultra-wide</td><td>{{ phone_a.ultra_wide_mp }}MP</td><td>{{ phone_b.ultra_wide_mp }}MP</td></tr>
+      <tr><td class="gm-spec-label">Telephoto</td><td>{{ phone_a.telephoto_mp if phone_a.telephoto_mp > 0 else '—' }}MP</td><td>{{ phone_b.telephoto_mp if phone_b.telephoto_mp > 0 else '—' }}MP</td></tr>
+      <tr><td class="gm-spec-label">Front Camera</td><td>{{ phone_a.front_camera_mp }}MP</td><td>{{ phone_b.front_camera_mp }}MP</td></tr>
+      <tr><td class="gm-spec-label">Display</td><td>{{ phone_a.display_inch }}" · {{ phone_a.refresh_rate_hz }}Hz</td><td>{{ phone_b.display_inch }}" · {{ phone_b.refresh_rate_hz }}Hz</td></tr>
+      <tr><td class="gm-spec-label">Display Type</td><td>{{ phone_a.display_type }}</td><td>{{ phone_b.display_type }}</td></tr>
+      <tr><td class="gm-spec-label">Weight</td><td>{{ phone_a.weight_g }}g</td><td>{{ phone_b.weight_g }}g</td></tr>
+      <tr><td class="gm-spec-label">Category</td><td class="text-capitalize">{{ phone_a.category }}</td><td class="text-capitalize">{{ phone_b.category }}</td></tr>
+    </tbody>
+  </table>
+</div>

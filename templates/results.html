@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Your Galaxy Matches — Galaxy Match{% endblock %}
+
+{% block content %}
+
+<section class="gm-results-hero">
+  <div class="gm-container">
+    <a href="{{ url_for('home') }}" class="gm-back-link"><i class="bi bi-arrow-left"></i> Start over</a>
+    <span class="gm-eyebrow">{{ persona.emoji }} {{ persona.name }}</span>
+    <h1 class="gm-results-title">Your Top 3 Galaxy Matches</h1>
+    <p class="gm-results-sub">Budget: <strong>₹{{ '{:,}'.format(budget) }}</strong> &nbsp;·&nbsp;
+      Weights used —
+      📸 {{ weights.camera }}% &nbsp;⚡ {{ weights.performance }}% &nbsp;🔋 {{ weights.battery }}% &nbsp;💰 {{ weights.value }}%
+    </p>
+    {% if inferred_note %}
+    <div class="gm-inferred-note"><i class="bi bi-magic"></i> {{ inferred_note }}</div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="gm-section">
+  <div class="gm-container">
+
+    {% if top3|length == 0 %}
+      <div class="gm-empty-state">
+        <i class="bi bi-emoji-frown"></i>
+        <h3>No phones matched your budget</h3>
+        <p>Try widening your budget range and searching again.</p>
+        <a href="{{ url_for('home') }}" class="btn gm-btn-primary">Adjust preferences</a>
+      </div>
+    {% else %}
+
+    <div class="gm-top3-grid">
+      {% for phone in top3 %}
+      <article class="gm-rank-card gm-rank-card--{{ phone.rank }}">
+        <button class="gm-wishlist-toggle" type="button" data-phone-id="{{ phone.phone_id }}" aria-label="Toggle wishlist">
+          <i class="bi bi-heart"></i>
+        </button>
+        <div class="gm-rank-badge">#{{ phone.rank }}{% if phone.rank == 1 %} <span>Best Match</span>{% endif %}</div>
+
+        <div class="gm-rank-score">
+          <svg viewBox="0 0 120 120" class="gm-ring-svg gm-ring-svg--result">
+            <circle cx="60" cy="60" r="52" class="gm-ring-track"/>
+            <circle cx="60" cy="60" r="52" class="gm-ring-fill" style="--pct: {{ phone.match_score }}"/>
+          </svg>
+          <div class="gm-ring-label"><span>{{ phone.match_score|round|int }}</span><small>MATCH</small></div>
+        </div>
+
+        <h3 class="gm-rank-model">{{ phone.model }}</h3>
+        <div class="gm-rank-price">₹{{ '{:,}'.format(phone.price_inr) }}</div>
+
+        <div class="gm-rank-reason">{{ phone.reason }}</div>
+
+        <div class="gm-score-bars">
+          <div class="gm-score-bar-row">
+            <span>📸 Camera</span>
+            <div class="gm-score-track"><div class="gm-score-fill" style="width:{{ (phone.camera_score*10)|round|int }}%"></div></div>
+            <span class="gm-score-num">{{ phone.camera_score }}</span>
+          </div>
+          <div class="gm-score-bar-row">
+            <span>⚡ Performance</span>
+            <div class="gm-score-track"><div class="gm-score-fill" style="width:{{ (phone.performance_score*10)|round|int }}%"></div></div>
+            <span class="gm-score-num">{{ phone.performance_score }}</span>
+          </div>
+          <div class="gm-score-bar-row">
+            <span>🔋 Battery</span>
+            <div class="gm-score-track"><div class="gm-score-fill" style="width:{{ (phone.battery_score*10)|round|int }}%"></div></div>
+            <span class="gm-score-num">{{ phone.battery_score }}</span>
+          </div>
+          <div class="gm-score-bar-row">
+            <span>💰 Value</span>
+            <div class="gm-score-track"><div class="gm-score-fill" style="width:{{ (phone.value_score*10)|round|int }}%"></div></div>
+            <span class="gm-score-num">{{ phone.value_score }}</span>
+          </div>
+        </div>
+
+        <ul class="gm-spec-list">
+          <li><i class="bi bi-cpu"></i> {{ phone.processor }}</li>
+          <li><i class="bi bi-memory"></i> {{ phone.ram_gb }}GB RAM · {{ phone.storage_gb }}GB</li>
+          <li><i class="bi bi-battery-charging"></i> {{ phone.battery_mah }}mAh · {{ phone.charging_w }}W</li>
+          <li><i class="bi bi-camera"></i> {{ phone.main_camera_mp }}MP main</li>
+          <li><i class="bi bi-aspect-ratio"></i> {{ phone.display_inch }}" · {{ phone.refresh_rate_hz }}Hz</li>
+        </ul>
+
+        <button class="btn gm-btn-outline gm-compare-add" data-phone-id="{{ phone.phone_id }}" data-phone-name="{{ phone.model }}">
+          <i class="bi bi-arrow-left-right"></i> Add to compare
+        </button>
+      </article>
+      {% endfor %}
+    </div>
+
+    <!-- Full ranking table -->
+    <div class="gm-section-head gm-section-head--sm gm-mt-lg">
+      <span class="gm-eyebrow">Full results</span>
+      <h2>All matching phones, ranked</h2>
+    </div>
+    <div class="gm-table-wrap">
+      <table class="gm-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Model</th><th>Price</th><th>Match</th>
+            <th>📸</th><th>⚡</th><th>🔋</th><th>💰</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for phone in full_ranking %}
+          <tr>
+            <td>{{ phone.rank }}</td>
+            <td>{{ phone.model }}</td>
+            <td>₹{{ '{:,}'.format(phone.price_inr) }}</td>
+            <td><span class="gm-table-match">{{ phone.match_score|round|int }}%</span></td>
+            <td>{{ phone.camera_score }}</td>
+            <td>{{ phone.performance_score }}</td>
+            <td>{{ phone.battery_score }}</td>
+            <td>{{ phone.value_score }}</td>
+            <td>
+              <div class="gm-table-actions">
+                <button class="gm-wishlist-toggle gm-wishlist-toggle--sm" type="button" data-phone-id="{{ phone.phone_id }}" aria-label="Toggle wishlist">
+                  <i class="bi bi-heart"></i>
+                </button>
+                <button class="btn btn-sm gm-btn-outline gm-compare-add" data-phone-id="{{ phone.phone_id }}" data-phone-name="{{ phone.model }}">Compare</button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% endif %}
+  </div>
+</section>
+
+<!-- ===== Floating compare tray ===== -->
+<div class="gm-compare-tray" id="gm-compare-tray">
+  <div class="gm-compare-tray-inner">
+    <span class="gm-compare-tray-title"><i class="bi bi-arrow-left-right"></i> Compare</span>
+    <div class="gm-compare-slots" id="gm-compare-slots">
+      <div class="gm-compare-slot" data-slot="0"><span>Add a phone</span></div>
+      <div class="gm-compare-slot" data-slot="1"><span>Add a phone</span></div>
+    </div>
+    <button class="btn gm-btn-primary gm-btn-sm" id="gm-compare-go" disabled>Compare now</button>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script id="all-results-phones-data" type="application/json">{{ all_phones_json|tojson }}</script>
+<script id="recommendation-history-data" type="application/json">{{ history_payload|tojson }}</script>
+<script src="{{ url_for('static', filename='js/results.js') }}"></script>
+{% endblock %}

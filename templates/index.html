@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Galaxy Match — Find your Samsung Galaxy{% endblock %}
+
+{% block content %}
+
+<!-- ============ HERO ============ -->
+<section class="gm-hero">
+  <div class="gm-container gm-hero-grid">
+    <div class="gm-hero-copy" data-reveal>
+      <span class="gm-eyebrow">Galaxy Recommendation Assistant</span>
+      <h1 class="gm-hero-title">Every Galaxy phone,<br>weighed against <span class="gm-underline">what you value</span>.</h1>
+      <p class="gm-hero-sub">
+        Tell us how you use your phone. Our engine scores all 15 current Galaxy
+        models on camera, performance, battery and value — then ranks them
+        with a transparent, math-driven Weighted Sum Model.
+      </p>
+      <div class="gm-hero-cta">
+        <a href="#build" class="btn gm-btn-primary">Get my matches <i class="bi bi-arrow-down"></i></a>
+        <span class="gm-hero-meta"><i class="bi bi-cpu"></i> Score = Camera·w1 + Performance·w2 + Battery·w3 + Value·w4</span>
+      </div>
+    </div>
+    <div class="gm-hero-visual" aria-hidden="true">
+      <div class="gm-orb"></div>
+      <div class="gm-phone-card gm-phone-card--back"></div>
+      <div class="gm-phone-card gm-phone-card--front">
+        <div class="gm-phone-notch"></div>
+        <div class="gm-phone-ring">
+          <svg viewBox="0 0 120 120" class="gm-ring-svg">
+            <circle cx="60" cy="60" r="52" class="gm-ring-track"/>
+            <circle cx="60" cy="60" r="52" class="gm-ring-fill"/>
+          </svg>
+          <div class="gm-ring-label"><span>96</span><small>MATCH</small></div>
+        </div>
+        <div class="gm-phone-bars">
+          <div class="gm-bar"><span style="--val:92%"></span></div>
+          <div class="gm-bar"><span style="--val:88%"></span></div>
+          <div class="gm-bar"><span style="--val:95%"></span></div>
+          <div class="gm-bar"><span style="--val:74%"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BUILD / FORM SECTION ============ -->
+<section id="build" class="gm-section">
+  <div class="gm-container">
+    <div class="gm-section-head">
+      <span class="gm-eyebrow">Step 1 &amp; 2</span>
+      <h2>Tell us about you</h2>
+      <p class="gm-section-sub">Pick a ready-made persona, or describe yourself in your own words — either works.</p>
+    </div>
+
+    <form action="{{ url_for('recommend') }}" method="POST" id="gm-form">
+
+      <!-- Mode toggle -->
+      <div class="gm-mode-toggle" role="tablist">
+        <button type="button" class="gm-mode-btn active" data-mode="persona" role="tab">
+          <i class="bi bi-grid-fill"></i> Choose a persona
+        </button>
+        <button type="button" class="gm-mode-btn" data-mode="text" role="tab">
+          <i class="bi bi-chat-left-text-fill"></i> Describe yourself
+        </button>
+      </div>
+
+      <!-- PERSONA MODE -->
+      <div class="gm-mode-panel" id="panel-persona" data-panel="persona">
+        <div class="gm-persona-grid" id="personas">
+          {% for p in personas %}
+          <label class="gm-persona-card">
+            <input type="radio" name="persona_id" value="{{ p.id }}" {% if loop.first %}checked{% endif %}>
+            <div class="gm-persona-emoji">{{ p.emoji }}</div>
+            <div class="gm-persona-name">{{ p.name }}</div>
+            <div class="gm-persona-desc">{{ p.description }}</div>
+            <div class="gm-persona-weights">
+              <span title="Camera weight">📸 {{ (p.weights.camera*100)|round|int }}%</span>
+              <span title="Performance weight">⚡ {{ (p.weights.performance*100)|round|int }}%</span>
+              <span title="Battery weight">🔋 {{ (p.weights.battery*100)|round|int }}%</span>
+              <span title="Value weight">💰 {{ (p.weights.value*100)|round|int }}%</span>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- TEXT MODE -->
+      <div class="gm-mode-panel gm-hidden" id="panel-text" data-panel="text">
+        <div class="gm-text-input-wrap">
+          <textarea name="user_text" id="user_text" class="gm-textarea" rows="3"
+            placeholder="e.g. I'm a student with a ₹35k budget who mostly uses Instagram and WhatsApp, and I want the battery to last all day."></textarea>
+          <div class="gm-text-hint" id="gm-text-hint">
+            <i class="bi bi-magic"></i> We'll detect your persona and budget automatically as you type.
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Budget -->
+      <div class="gm-section-head gm-section-head--sm">
+        <span class="gm-eyebrow">Step 3</span>
+        <h2>Set your budget</h2>
+      </div>
+      <div class="gm-card gm-budget-card">
+        <div class="gm-budget-row">
+          <span class="gm-budget-min">₹{{ '{:,}'.format(min_price) }}</span>
+          <input type="range" class="gm-slider" id="budget" name="budget"
+                 min="{{ min_price }}" max="{{ max_price }}" step="1000" value="60000">
+          <span class="gm-budget-max">₹{{ '{:,}'.format(max_price) }}</span>
+        </div>
+        <div class="gm-budget-value">Budget: <strong id="budget-display">₹60,000</strong></div>
+      </div>
+
+      <!-- Step 4: Priorities (fine-tune) -->
+      <div class="gm-section-head gm-section-head--sm">
+        <span class="gm-eyebrow">Step 4 · Optional</span>
+        <h2>Fine-tune your priorities</h2>
+        <p class="gm-section-sub">Drag to override the persona's default weighting. They'll auto-balance to 100%.</p>
+      </div>
+      <div class="gm-card gm-priority-card">
+        <div class="gm-priority-row" data-key="camera">
+          <label><i class="bi bi-camera-fill"></i> Camera</label>
+          <input type="range" min="0" max="100" value="25" name="w_camera" class="gm-slider gm-slider-sm">
+          <span class="gm-priority-val">25%</span>
+        </div>
+        <div class="gm-priority-row" data-key="performance">
+          <label><i class="bi bi-lightning-charge-fill"></i> Performance</label>
+          <input type="range" min="0" max="100" value="25" name="w_performance" class="gm-slider gm-slider-sm">
+          <span class="gm-priority-val">25%</span>
+        </div>
+        <div class="gm-priority-row" data-key="battery">
+          <label><i class="bi bi-battery-charging"></i> Battery</label>
+          <input type="range" min="0" max="100" value="25" name="w_battery" class="gm-slider gm-slider-sm">
+          <span class="gm-priority-val">25%</span>
+        </div>
+        <div class="gm-priority-row" data-key="value">
+          <label><i class="bi bi-tag-fill"></i> Value</label>
+          <input type="range" min="0" max="100" value="25" name="w_value" class="gm-slider gm-slider-sm">
+          <span class="gm-priority-val">25%</span>
+        </div>
+        <div class="gm-priority-hint">
+          <i class="bi bi-info-circle"></i> Leave untouched to use your persona's recommended weighting.
+        </div>
+      </div>
+
+      <div class="gm-submit-row">
+        <button type="submit" class="btn gm-btn-primary gm-btn-lg">
+          Recommend my Top 3 <i class="bi bi-arrow-right"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="gm-section gm-section--tint">
+  <div class="gm-container">
+    <div class="gm-section-head">
+      <span class="gm-eyebrow">Under the hood</span>
+      <h2>A transparent scoring engine, not a black box</h2>
+    </div>
+    <div class="gm-howitworks-grid">
+      <div class="gm-how-card">
+        <div class="gm-how-icon"><i class="bi bi-sliders"></i></div>
+        <h3>1. Normalize</h3>
+        <p>Every spec — megapixels, chipset, mAh, price — is scaled into four 0–10 scores: Camera, Performance, Battery, Value.</p>
+      </div>
+      <div class="gm-how-card">
+        <div class="gm-how-icon"><i class="bi bi-diagram-3"></i></div>
+        <h3>2. Weight</h3>
+        <p>Your persona (or custom sliders) assigns a weight to each score, always summing to 100%.</p>
+      </div>
+      <div class="gm-how-card">
+        <div class="gm-how-icon"><i class="bi bi-calculator"></i></div>
+        <h3>3. Sum</h3>
+        <p>Score = Camera·w1 + Performance·w2 + Battery·w3 + Value·w4 — the Weighted Sum Model, computed for every phone.</p>
+      </div>
+      <div class="gm-how-card">
+        <div class="gm-how-icon"><i class="bi bi-trophy"></i></div>
+        <h3>4. Rank</h3>
+        <p>Phones are sorted by score within your budget, and the Top 3 are explained in plain English.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+{% endblock %}

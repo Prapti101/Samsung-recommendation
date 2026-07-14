@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Galaxy Match — Samsung Recommendation Assistant{% endblock %}</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Fonts: Outfit (display / geometric, Samsung-esque) + Inter (body/UI) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<nav class="gm-navbar">
+  <div class="gm-container gm-navbar-inner">
+    <a class="gm-brand" href="{{ url_for('home') }}">
+      <span class="gm-brand-mark">◆</span>
+      <span>Galaxy&nbsp;Match</span>
+    </a>
+    <div class="gm-nav-links">
+      <a href="{{ url_for('home') }}">Home</a>
+      <a href="{{ url_for('compare_page') }}">Compare</a>
+      <a href="{{ url_for('wishlist_page') }}">Wishlist</a>
+      <a href="{{ url_for('history_page') }}">History</a>
+      <a href="{{ url_for('home') }}#personas">Personas</a>
+    </div>
+    <div class="gm-lang-switch" data-i18n-skip>
+      <select id="gm-lang-select" class="form-select form-select-sm gm-lang-select" aria-label="Select language">
+        <option value="en">English</option>
+        <option value="hi">हिन्दी</option>
+        <option value="bn">বাংলা</option>
+        <option value="ta">தமிழ்</option>
+        <option value="te">తెలుగు</option>
+        <option value="mr">मराठी</option>
+        <option value="gu">ગુજરાતી</option>
+        <option value="kn">ಕನ್ನಡ</option>
+        <option value="ml">മലയാളം</option>
+        <option value="pa">ਪੰਜਾਬੀ</option>
+        <option value="or">ଓଡ଼ିଆ</option>
+        <option value="ur">اردو</option>
+      </select>
+    </div>
+  </div>
+</nav>
+
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="gm-footer">
+  <div class="gm-container gm-footer-inner">
+    <div>
+      <div class="gm-brand gm-brand-footer"><span class="gm-brand-mark">◆</span><span>Galaxy Match</span></div>
+      <p class="gm-footer-note">An independent recommendation assistant built with the Weighted Sum Model.
+        Not an official Samsung product. Prices are indicative (India, 2024&ndash;2025).</p>
+    </div>
+    <div class="gm-footer-links">
+      <span>Flask · Pandas · NumPy · Matplotlib</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/storage.js') }}"></script>
+<script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>
