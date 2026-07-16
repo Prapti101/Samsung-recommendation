@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Your Galaxy Matches — Galaxy Match{% endblock %}
+{% block title %}Your Galaxy Matches — Galaxy Compass{% endblock %}
 
 {% block content %}
 
@@ -24,7 +24,7 @@
     <h1 class="gm-results-title">Your Top 3 Galaxy Matches</h1>
     <p class="gm-results-sub">Budget: <strong>₹{{ '{:,}'.format(budget) }}</strong> &nbsp;·&nbsp;
       Weights used —
-      📸 {{ weights.camera }}% &nbsp;⚡ {{ weights.performance }}% &nbsp;🔋 {{ weights.battery }}% &nbsp;💰 {{ weights.value }}%
+      📸 {{ weights.camera }}% &nbsp;⚡ {{ weights.performance }}% &nbsp;🔋 {{ weights.battery }}% &nbsp;🖥️ {{ weights.display }}%
     </p>
     {% if inferred_note %}
     <div class="gm-inferred-note"><i class="bi bi-magic"></i> {{ inferred_note }}</div>
@@ -125,9 +125,9 @@
                 <span class="gm-score-num">{{ phone.battery_score }}</span>
               </div>
               <div class="gm-score-bar-row">
-                <span>💰 Value</span>
-                <div class="gm-score-track"><div class="gm-score-fill gm-bar-animate" style="--target:{{ (phone.value_score*10)|round|int }}%"></div></div>
-                <span class="gm-score-num">{{ phone.value_score }}</span>
+                <span>🖥️ Display</span>
+                <div class="gm-score-track"><div class="gm-score-fill gm-bar-animate" style="--target:{{ (phone.display_score*10)|round|int }}%"></div></div>
+                <span class="gm-score-num">{{ phone.display_score }}</span>
               </div>
             </div>
           </div>
@@ -419,43 +419,49 @@
     </section>
 
 
-    <!-- Full ranking table -->
+    <!-- ============================================================
+         SECTION · BUDGET SIMULATOR (USP)
+         Adjust the budget up/down and re-run the SAME recommendation
+         (same persona / weights) for the simulated budget. Rendered by
+         static/js/budget_simulator.js via /api/simulate-budget.
+         ============================================================ -->
     <div class="gm-section-head gm-section-head--sm gm-mt-lg">
-      <span class="gm-eyebrow">Full results</span>
-      <h2>All matching phones, ranked</h2>
+      <span class="gm-eyebrow">What if?</span>
+      <h2>Budget Simulator</h2>
+      <p class="gm-section-sub">Adjust your budget up or down and click Update — we re-run the same recommendation with the same priorities for your simulated budget.</p>
     </div>
-    <div class="gm-table-wrap">
-      <table class="gm-table">
-        <thead>
-          <tr>
-            <th>#</th><th>Model</th><th>Price</th><th>Match</th>
-            <th>📸</th><th>⚡</th><th>🔋</th><th>💰</th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for phone in full_ranking %}
-          <tr>
-            <td>{{ phone.rank }}</td>
-            <td>{{ phone.model }}</td>
-            <td>₹{{ '{:,}'.format(phone.price_inr) }}</td>
-            <td><span class="gm-table-match">{{ phone.match_score|round|int }}%</span></td>
-            <td>{{ phone.camera_score }}</td>
-            <td>{{ phone.performance_score }}</td>
-            <td>{{ phone.battery_score }}</td>
-            <td>{{ phone.value_score }}</td>
-            <td>
-              <div class="gm-table-actions">
-                <button class="gm-wishlist-toggle gm-wishlist-toggle--sm" type="button" data-phone-id="{{ phone.phone_id }}" aria-label="Toggle wishlist">
-                  <i class="bi bi-heart"></i>
-                </button>
-                <button class="btn btn-sm gm-btn-outline gm-compare-add" data-phone-id="{{ phone.phone_id }}" data-phone-name="{{ phone.model }}">Compare</button>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="gm-card gm-budget-sim-card" id="gm-budget-sim"
+         data-original-budget="{{ budget }}"
+         data-min-budget="{{ sim_min_budget }}"
+         data-max-budget="{{ sim_max_budget }}">
+      <div class="gm-budget-value" style="margin-top:0;">Original budget: <strong>₹{{ '{:,}'.format(budget) }}</strong></div>
+
+      <div class="gm-budget-row" style="margin-top:14px;">
+        <span class="gm-budget-min">−₹{{ '{:,}'.format(budget - sim_min_budget) }}</span>
+        <input type="range" class="gm-slider" id="sim-budget-slider"
+               min="{{ sim_min_budget - budget }}" max="{{ sim_max_budget - budget }}" step="1000" value="0">
+        <span class="gm-budget-max">+₹{{ '{:,}'.format(sim_max_budget - budget) }}</span>
+      </div>
+      <div class="gm-budget-value">
+        Budget change: <strong id="sim-change-display">₹0</strong>
+        &nbsp;·&nbsp; Simulated budget: <strong id="sim-budget-display">₹{{ '{:,}'.format(budget) }}</strong>
+      </div>
+
+      <div class="gm-budget-row gm-mt-sm" style="margin-top:18px;">
+        <label for="sim-budget-input" class="gm-budget-min" style="min-width:130px;">Or enter change (±₹)</label>
+        <input type="number" id="sim-budget-input" class="gm-textarea" style="max-width:200px;height:auto;padding:10px 14px;"
+               min="{{ sim_min_budget - budget }}" max="{{ sim_max_budget - budget }}" step="1000"
+               placeholder="0" aria-label="Enter budget change in rupees">
+        <button type="button" class="btn gm-btn-primary gm-btn-sm" id="sim-update-btn">
+          <i class="bi bi-arrow-repeat"></i> Update Recommendation
+        </button>
+      </div>
+
+      <div class="gm-sim-result" id="gm-sim-result"></div>
     </div>
+
+    <script id="gm-budget-sim-data" type="application/json">{{ {"weights": weights_raw, "original_budget": budget, "original_top1": (top3[0] if top3 else None)} | tojson }}</script>
+
 
     <!-- ===== End-of-journey CTA ===== -->
     <div class="gm-next-cta" data-reveal>
@@ -500,5 +506,6 @@
 <script id="recommendation-history-data" type="application/json">{{ history_payload|tojson }}</script>
 <script src="{{ url_for('static', filename='js/results.js') }}"></script>
 <script src="{{ url_for('static', filename='js/insights.js') }}"></script>
+<script src="{{ url_for('static', filename='js/budget_simulator.js') }}"></script>
 {% endif %}
 {% endblock %}

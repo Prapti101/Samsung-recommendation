@@ -15,8 +15,8 @@ import pandas as pd
 
 from feature_engineering import load_engineered_phones
 
-SCORE_COLS = ["camera_score", "performance_score", "battery_score", "value_score"]
-WEIGHT_KEYS = ["camera", "performance", "battery", "value"]
+SCORE_COLS = ["camera_score", "performance_score", "battery_score", "display_score"]
+WEIGHT_KEYS = ["camera", "performance", "battery", "display"]
 
 
 def compute_wsm_scores(df: pd.DataFrame, weights: dict) -> pd.DataFrame:
@@ -38,7 +38,7 @@ def compute_wsm_scores(df: pd.DataFrame, weights: dict) -> pd.DataFrame:
         out["camera_score"] * weights["camera"] +
         out["performance_score"] * weights["performance"] +
         out["battery_score"] * weights["battery"] +
-        out["value_score"] * weights["value"]
+        out["display_score"] * weights["display"]
     )
     # raw_score is out of 10 (since each component is 0-10 and weights sum to 1)
     out["wsm_raw"] = raw_score
@@ -46,7 +46,7 @@ def compute_wsm_scores(df: pd.DataFrame, weights: dict) -> pd.DataFrame:
     return out
 
 
-def apply_budget_filter(df: pd.DataFrame, budget: int, tolerance: float = 0.15) -> pd.DataFrame:
+def apply_budget_filter(df: pd.DataFrame, budget: int, tolerance: float = 0.0) -> pd.DataFrame:
     """
     Filter phones to those within budget, allowing a small tolerance
     above the stated budget (people often stretch a little for the
@@ -78,7 +78,7 @@ def _generate_reason(row: pd.Series, weights: dict, rank: int) -> str:
         "camera": row["camera_score"] * weights["camera"],
         "performance": row["performance_score"] * weights["performance"],
         "battery": row["battery_score"] * weights["battery"],
-        "value": row["value_score"] * weights["value"],
+        "display": row["display_score"] * weights["display"],
     }
     top_dims = sorted(contributions, key=contributions.get, reverse=True)
 
@@ -86,7 +86,7 @@ def _generate_reason(row: pd.Series, weights: dict, rank: int) -> str:
         "camera": f"a standout {row['main_camera_mp']}MP camera system",
         "performance": f"top-tier performance from its {row['processor']} chipset",
         "battery": f"a strong {row['battery_mah']}mAh battery with {row['charging_w']}W charging",
-        "value": "excellent value for what you're paying",
+        "display": f"a gorgeous {row['display_inch']}\" {row['display_type']} display at {row['refresh_rate_hz']}Hz",
     }
 
     lead_dim, second_dim = top_dims[0], top_dims[1]
@@ -158,7 +158,7 @@ def generate_budget_change_reasons(previous: dict, new: dict) -> list:
         ("camera_score", "📸 Camera"),
         ("performance_score", "⚡ Performance"),
         ("battery_score", "🔋 Battery"),
-        ("value_score", "💰 Value"),
+        ("display_score", "🖥️ Display"),
     ]
 
     reasons = []

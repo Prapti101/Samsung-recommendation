@@ -159,7 +159,7 @@
           ${scoreBar("Camera", phone.camera_score)}
           ${scoreBar("Performance", phone.performance_score)}
           ${scoreBar("Battery", phone.battery_score)}
-          ${scoreBar("Value", phone.value_score)}
+          ${scoreBar("Display", phone.display_score)}
         </div>
         <ul class="gm-spec-list">
           <li><i class="bi bi-cpu"></i> ${escapeHtml(phone.processor)}</li>

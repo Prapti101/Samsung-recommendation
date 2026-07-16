@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
     { key: "camera_score", label: "Camera", icon: "📸" },
     { key: "performance_score", label: "Performance", icon: "⚡" },
     { key: "battery_score", label: "Battery", icon: "🔋" },
-    { key: "value_score", label: "Value", icon: "💰" },
+    { key: "display_score", label: "Display", icon: "🖥️" },
   ];
 
   function scoreRowHtml(a, b, row) {

@@ -199,6 +199,7 @@ def _phone_to_dict(row: pd.Series) -> dict:
         "performance_score": float(row["performance_score"]),
         "battery_score": float(row["battery_score"]),
         "value_score": float(row["value_score"]),
+        "display_score": float(row["display_score"]),
         # AI & Longevity is a visual-only, radar-chart dimension computed by a
         # separate scorer (ai_longevity.py). It does NOT affect the WSM ranking.
         "ai_longevity_score": compute_ai_longevity(row),
@@ -212,8 +213,9 @@ def _phone_to_dict(row: pd.Series) -> dict:
 def home():
     """Home page: persona selection, free-text input, budget slider, priorities."""
     df = load_engineered_phones(CSV_PATH)
-    min_price = int(df["price_inr"].min())
-    max_price = int(df["price_inr"].max())
+    # Budget slider bounds: fixed range ₹8,000 – ₹2,00,000 (per product spec).
+    min_price = 8000
+    max_price = 200000
     return render_template(
         "index.html",
         personas=list_personas(),
@@ -254,7 +256,8 @@ def recommend():
             "w_camera": form.get("w_camera", ""),
             "w_performance": form.get("w_performance", ""),
             "w_battery": form.get("w_battery", ""),
-            "w_value": form.get("w_value", ""),
+            "w_display": form.get("w_display", form.get("w_value", "")),
+            "priorities_touched": form.get("priorities_touched", ""),
         }
     else:
         form = session.get("last_reco")
@@ -279,7 +282,7 @@ def recommend():
             "name": "Your Quiz Match",
             "emoji": "\u2728",
             "default_budget": 60000,
-            "weights": {"camera": 0.25, "performance": 0.25, "battery": 0.25, "value": 0.25},
+            "weights": {"camera": 0.25, "performance": 0.25, "battery": 0.25, "display": 0.25},
         }
         budget = int(budget_raw) if budget_raw else persona["default_budget"]
         inferred_note = ("Built from your quiz answers \u2014 your priorities were "
@@ -301,20 +304,27 @@ def recommend():
 
     weights = dict(persona["weights"])
 
-    # Optional custom priority sliders (camera/performance/battery/value 0-100),
-    # sent from the "Fine-tune priorities" panel on the home page. If present
-    # and they sum to > 0, they override the persona's default weights.
-    custom_weight_keys = ["w_camera", "w_performance", "w_battery", "w_value"]
-    if all(form.get(k) not in (None, "") for k in custom_weight_keys):
-        raw_vals = {k: float(form.get(k, 0)) for k in custom_weight_keys}
-        total = sum(raw_vals.values())
-        if total > 0:
-            weights = {
-                "camera": raw_vals["w_camera"] / total,
-                "performance": raw_vals["w_performance"] / total,
-                "battery": raw_vals["w_battery"] / total,
-                "value": raw_vals["w_value"] / total,
-            }
+    # Optional custom priority sliders (camera/performance/battery/display 0-100),
+    # from the "Fine-tune priorities" panel. These are ALWAYS present in the form
+    # (they have default values), so we must only let them override the persona's
+    # weights when the user actually dragged a slider (priorities_touched == "1")
+    # or when the request came from the quiz (which supplies real weights).
+    # Otherwise every persona/description would collapse to the same 25/25/25/25
+    # weighting and return identical recommendations.
+    priorities_touched = form.get("priorities_touched", "").strip() == "1"
+    if source == "quiz" or priorities_touched:
+        # Home page posts w_display; the quiz posts w_value — accept either.
+        raw_vals = {
+            "camera": form.get("w_camera", ""),
+            "performance": form.get("w_performance", ""),
+            "battery": form.get("w_battery", ""),
+            "display": form.get("w_display", form.get("w_value", "")),
+        }
+        if all(v not in (None, "") for v in raw_vals.values()):
+            nums = {k: float(v) for k, v in raw_vals.items()}
+            total = sum(nums.values())
+            if total > 0:
+                weights = {k: nums[k] / total for k in nums}
 
     top3 = get_top_recommendations(weights, budget, csv_path=CSV_PATH, top_n=3)
     full_ranking = get_full_ranking(weights, budget, csv_path=CSV_PATH)
@@ -504,7 +514,7 @@ def api_simulate_budget():
     budget_raw = data.get("budget")
     previous = data.get("previous") or None
 
-    required_keys = ["camera", "performance", "battery", "value"]
+    required_keys = ["camera", "performance", "battery", "display"]
     if not all(k in weights for k in required_keys):
         return jsonify({"error": "invalid_weights"}), 400
 

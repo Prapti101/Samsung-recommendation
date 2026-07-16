@@ -58,6 +58,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const valueLabel = row.querySelector(".gm-priority-val");
     slider.addEventListener("input", () => {
       valueLabel.textContent = slider.value + "%";
+      // Mark that the user has customised priorities so the backend uses these
+      // sliders instead of the persona's default weighting.
+      const touched = document.getElementById("gm-priorities-touched");
+      if (touched) touched.value = "1";
     });
   });
 

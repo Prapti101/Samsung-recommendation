@@ -26,7 +26,7 @@ PERSONAS = {
                         "all-round specs and a battery that lasts through long "
                         "days of classes, notes and entertainment, without "
                         "overspending.",
-        "weights": {"camera": 0.15, "performance": 0.15, "battery": 0.25, "value": 0.45},
+        "weights": {"camera": 0.15, "performance": 0.20, "battery": 0.35, "display": 0.30},
         "default_budget": 30000,
         "keywords": ["student", "budget", "college", "school", "cheap", "affordable",
                      "value", "money", "tight budget", "low budget", "study", "save"],
@@ -38,7 +38,7 @@ PERSONAS = {
         "description": "You need a dependable phone for work and life -- strong "
                         "performance for multitasking, all-day battery, and the "
                         "reliability to handle calls, email and meetings anywhere.",
-        "weights": {"camera": 0.20, "performance": 0.30, "battery": 0.30, "value": 0.20},
+        "weights": {"camera": 0.20, "performance": 0.35, "battery": 0.25, "display": 0.20},
         "default_budget": 120000,
         "keywords": ["business", "work", "professional", "office", "productivity",
                      "meetings", "reliable", "corporate", "executive", "email",
@@ -51,7 +51,7 @@ PERSONAS = {
         "description": "You want a phone that lasts through long journeys, captures "
                         "every moment on the go, and stays connected and reliable "
                         "wherever the road takes you.",
-        "weights": {"camera": 0.30, "performance": 0.20, "battery": 0.35, "value": 0.15},
+        "weights": {"camera": 0.30, "performance": 0.20, "battery": 0.35, "display": 0.15},
         "default_budget": 80000,
         "keywords": ["travel", "traveller", "traveler", "explorer", "journey", "trip",
                      "outdoor", "adventure", "navigation", "maps", "roaming", "hiking"],
@@ -63,7 +63,7 @@ PERSONAS = {
         "description": "You want raw speed -- smooth high-refresh gaming, effortless "
                         "multitasking, and a phone that never lags, with a battery "
                         "that keeps up with long sessions.",
-        "weights": {"camera": 0.15, "performance": 0.50, "battery": 0.25, "value": 0.10},
+        "weights": {"camera": 0.10, "performance": 0.45, "battery": 0.20, "display": 0.25},
         "default_budget": 110000,
         "keywords": ["gaming", "gamer", "game", "pubg", "bgmi", "fps", "multitask",
                      "performance", "fast", "power user", "processor", "chipset",
@@ -76,7 +76,7 @@ PERSONAS = {
         "description": "You live for content -- stunning photos and video, a great "
                         "front camera for selfies and vlogs, and the power to edit "
                         "and post to your followers on the go.",
-        "weights": {"camera": 0.45, "performance": 0.25, "battery": 0.15, "value": 0.15},
+        "weights": {"camera": 0.40, "performance": 0.20, "battery": 0.15, "display": 0.25},
         "default_budget": 100000,
         "keywords": ["influencer", "content creator", "instagram", "reels", "tiktok",
                      "youtube", "vlog", "selfie", "social media", "creator", "posting",
@@ -89,7 +89,7 @@ PERSONAS = {
         "description": "You care most about capturing stunning photos -- the best "
                         "camera system, sharp detail and strong low-light "
                         "performance, all in your pocket.",
-        "weights": {"camera": 0.55, "performance": 0.20, "battery": 0.15, "value": 0.10},
+        "weights": {"camera": 0.55, "performance": 0.20, "battery": 0.10, "display": 0.15},
         "default_budget": 140000,
         "keywords": ["photo", "photography", "photographer", "camera", "portrait",
                      "night mode", "zoom", "telephoto", "megapixel", "shoot", "dslr",

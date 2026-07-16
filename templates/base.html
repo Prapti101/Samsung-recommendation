@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block title %}Galaxy Match — Samsung Recommendation Assistant{% endblock %}</title>
+<title>{% block title %}Galaxy Compass — Samsung Recommendation Assistant{% endblock %}</title>
 
 <!-- Apply the saved theme before first paint to avoid a flash of the wrong
      theme. 'auto' resolves against the OS via prefers-color-scheme. -->
@@ -38,17 +38,19 @@
 </head>
 <body{% if request.args.get('embed') %} class="gm-embedded"{% endif %}>
 
+<!-- Scroll-driven background layer (colour shifts as you scroll). -->
+<div id="gm-scroll-bg" aria-hidden="true"></div>
+
 {% if not request.args.get('embed') %}
 <nav class="gm-navbar" id="gm-navbar">
   <div class="gm-container gm-navbar-inner">
     <a class="gm-brand" href="{{ url_for('home') }}">
       <span class="gm-brand-mark">◆</span>
-      <span>Galaxy&nbsp;Match</span>
+      <span>Galaxy&nbsp;Compass</span>
     </a>
     <div class="gm-nav-links">
       <a href="{{ url_for('home') }}">Home</a>
       <a href="{{ url_for('compare_page') }}">Compare</a>
-      <a href="{{ url_for('home') }}#build">Best Deals</a>
       <a href="{{ url_for('recommend') }}" class="gm-nav-recommend">Recommend</a>
       <a href="{{ url_for('history_page') }}">History</a>
     </div>
@@ -84,7 +86,7 @@
     <div class="gm-footer-top">
       <!-- Brand / About -->
       <div class="gm-footer-brandcol">
-        <div class="gm-brand gm-brand-footer"><span class="gm-brand-mark">◆</span><span>Galaxy Match</span></div>
+        <div class="gm-brand gm-brand-footer"><span class="gm-brand-mark">◆</span><span>Galaxy Compass</span></div>
         <p class="gm-footer-about">The intelligent way to match a Samsung Galaxy phone to how you live — camera, performance, battery and value, weighed transparently with a Weighted Sum Model.</p>
         <div class="gm-footer-social">
           <a href="https://www.instagram.com/samsungindia/" target="_blank" rel="noopener" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
@@ -140,7 +142,7 @@
     </div>
 
     <div class="gm-footer-bottom">
-      <p class="gm-footer-copy">© {{ 2026 }} Galaxy Match · Designed &amp; Developed for Samsung Mobile Recommendation Project</p>
+      <p class="gm-footer-copy">© {{ 2026 }} Galaxy Compass · Designed &amp; Developed for Samsung Mobile Recommendation Project</p>
       <p class="gm-footer-note">An independent recommendation assistant built with the Weighted Sum Model. Not an official Samsung product. Prices are indicative (India, 2024&ndash;2025).</p>
     </div>
   </div>
@@ -153,5 +155,45 @@
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 <script src="{{ url_for('static', filename='js/storage.js') }}"></script>
 {% block extra_scripts %}{% endblock %}
+
+<!-- Scroll-driven background colour (Lunasol-style: warm → cool as you scroll) -->
+<script>
+(function () {
+  var bg = document.getElementById("gm-scroll-bg");
+  if (!bg) return;
+  // Soft palette, warm sunrise → cool moonlight. Tweak these RGB stops freely.
+  var stops = [
+    [250, 236, 214], // warm cream
+    [249, 214, 196], // peach
+    [244, 197, 210], // blush rose
+    [221, 206, 240], // soft lilac
+    [201, 214, 244], // periwinkle
+    [198, 223, 238]  // moonlight blue
+  ];
+  function lerp(a, b, t) { return Math.round(a + (b - a) * t); }
+  function colorAt(p) {
+    p = Math.max(0, Math.min(1, p));
+    var seg = p * (stops.length - 1);
+    var i = Math.floor(seg);
+    if (i >= stops.length - 1) return stops[stops.length - 1];
+    var t = seg - i, a = stops[i], b = stops[i + 1];
+    return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+  }
+  var ticking = false;
+  function update() {
+    ticking = false;
+    var doc = document.documentElement;
+    var max = doc.scrollHeight - window.innerHeight;
+    var y = window.scrollY || doc.scrollTop || 0;
+    var p = max > 0 ? y / max : 0;
+    var c = colorAt(p);
+    bg.style.backgroundColor = "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
+  }
+  function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", update);
+  update();
+})();
+</script>
 </body>
 </html>

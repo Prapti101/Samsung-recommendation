@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Galaxy Match — Find your perfect Galaxy{% endblock %}
+{% block title %}Galaxy Compass — Find your perfect Galaxy{% endblock %}
 
 {% block content %}
 
@@ -11,7 +11,7 @@
   <div class="gm-container gm-lux-hero-grid">
 
     <div class="gm-lux-hero-copy">
-      <h1 class="gm-lux-title" id="gm-lux-title">Find Your Perfect Galaxy.</h1>
+      <h1 class="gm-lux-title" id="gm-lux-title">Discover the galaxy that suits you</h1>
       <p class="gm-lux-tagline" id="gm-lux-tagline">The intelligent way to match a Samsung Galaxy phone to how you actually live — camera, performance, battery and value, weighed for you.</p>
       <div class="gm-lux-cta">
         <a href="#build" class="btn gm-btn-primary gm-btn-lg gm-lux-btn">Start your match <i class="bi bi-arrow-right"></i></a>
@@ -124,6 +124,10 @@
           <div class="gm-budget-value">Budget: <strong id="budget-display">₹60,000</strong></div>
         </div>
 
+        <!-- Set to "1" by home.js when the user drags any priority slider, so the
+             persona's own weighting is used unless the user actually customises. -->
+        <input type="hidden" name="priorities_touched" id="gm-priorities-touched" value="">
+
         <div class="gm-section-head gm-section-head--sm">
           <span class="gm-eyebrow">Step 3 · Optional</span>
           <h2>Fine-tune your priorities</h2>
@@ -145,9 +149,9 @@
             <input type="range" min="0" max="100" value="25" name="w_battery" class="gm-slider gm-slider-sm">
             <span class="gm-priority-val">25%</span>
           </div>
-          <div class="gm-priority-row" data-key="value">
-            <label><i class="bi bi-tag-fill"></i> Value</label>
-            <input type="range" min="0" max="100" value="25" name="w_value" class="gm-slider gm-slider-sm">
+          <div class="gm-priority-row" data-key="display">
+            <label><i class="bi bi-phone-fill"></i> Display</label>
+            <input type="range" min="0" max="100" value="25" name="w_display" class="gm-slider gm-slider-sm">
             <span class="gm-priority-val">25%</span>
           </div>
           <div class="gm-priority-hint">
@@ -184,38 +188,6 @@
     <p class="gm-loading-msg" id="gm-loading-msg">Analyzing your preferences...</p>
   </div>
 </div>
-
-<!-- ============ HOW IT WORKS ============ -->
-<section class="gm-section gm-section--tint" data-reveal>
-  <div class="gm-container">
-    <div class="gm-section-head">
-      <span class="gm-eyebrow">Under the hood</span>
-      <h2>A transparent scoring engine, not a black box</h2>
-    </div>
-    <div class="gm-howitworks-grid">
-      <div class="gm-how-card">
-        <div class="gm-how-icon"><i class="bi bi-sliders"></i></div>
-        <h3>1. Normalize</h3>
-        <p>Every spec — megapixels, chipset, mAh, price — is scaled into four 0–10 scores: Camera, Performance, Battery, Value.</p>
-      </div>
-      <div class="gm-how-card">
-        <div class="gm-how-icon"><i class="bi bi-diagram-3"></i></div>
-        <h3>2. Weight</h3>
-        <p>Your persona (or custom sliders) assigns a weight to each score, always summing to 100%.</p>
-      </div>
-      <div class="gm-how-card">
-        <div class="gm-how-icon"><i class="bi bi-calculator"></i></div>
-        <h3>3. Sum</h3>
-        <p>Score = Camera·w1 + Performance·w2 + Battery·w3 + Value·w4 — the Weighted Sum Model, computed for every phone.</p>
-      </div>
-      <div class="gm-how-card">
-        <div class="gm-how-icon"><i class="bi bi-trophy"></i></div>
-        <h3>4. Rank</h3>
-        <p>Phones are sorted by score within your budget, and the Top 3 are explained in plain English.</p>
-      </div>
-    </div>
-  </div>
-</section>
 
 {% endblock %}
 

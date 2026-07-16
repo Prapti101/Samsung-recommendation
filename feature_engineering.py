@@ -132,16 +132,32 @@ def compute_value_score(df: pd.DataFrame) -> pd.Series:
     return _min_max_normalize(spec_per_sqrt_rupee)
 
 
+def compute_display_score(df: pd.DataFrame) -> pd.Series:
+    """
+    Display score on an absolute anchor: panel quality (Dynamic AMOLED 2X is
+    Samsung's best tier, Super AMOLED is very good), high refresh rate (120Hz),
+    and screen size all contribute, so flagships with the best screens score
+    highest while budget panels still register as decent.
+    """
+    panel = df["display_type"].astype(str).str.contains("2X", case=False).astype(float)
+    panel_score = 0.75 + panel * 0.25            # Super AMOLED 0.75, Dynamic AMOLED 2X 1.0
+    refresh_score = np.clip((df["refresh_rate_hz"] - 60) / (120 - 60), 0, 1)
+    size_score = np.clip((df["display_inch"] - 6.0) / (7.6 - 6.0), 0, 1)
+    score = panel_score * 4.0 + refresh_score * 4.0 + size_score * 2.0
+    return _clip10(score)
+
+
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Adds camera_score, performance_score, battery_score and value_score
-    columns (0-10) to a copy of the input DataFrame and returns it.
+    Adds camera_score, performance_score, battery_score, value_score and
+    display_score columns (0-10) to a copy of the input DataFrame.
     """
     out = df.copy()
     out["camera_score"] = compute_camera_score(out)
     out["performance_score"] = compute_performance_score(out)
     out["battery_score"] = compute_battery_score(out)
     out["value_score"] = compute_value_score(out)
+    out["display_score"] = compute_display_score(out)
     return out
 
 

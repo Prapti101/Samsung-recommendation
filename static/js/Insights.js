@@ -41,8 +41,8 @@ document.addEventListener("DOMContentLoaded", () => {
       explain: "Chipset speed, RAM and smoothness for apps & games." },
     { key: "battery_score", label: "Battery", icon: "🔋",
       explain: "Battery capacity and charging speed for all-day use." },
-    { key: "value_score", label: "Value", icon: "💰",
-      explain: "How much phone you get for the price." },
+    { key: "display_score", label: "Display", icon: "🖥️",
+      explain: "Screen quality: panel type, refresh rate and size." },
     { key: "ai_longevity_score", label: "AI & Longevity", icon: "🤖",
       explain: "Galaxy AI readiness plus how future-proof it stays over time." },
   ];
