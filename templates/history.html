@@ -5,7 +5,6 @@
 <section class="gm-results-hero">
   <div class="gm-container">
     <a href="{{ url_for('home') }}" class="gm-back-link"><i class="bi bi-arrow-left"></i> Home</a>
-    <span class="gm-eyebrow">Saved locally</span>
     <h1 class="gm-results-title">Recommendation History</h1>
     <p class="gm-results-sub">Review previous recommendation runs saved on this device.</p>
   </div>
@@ -13,12 +12,8 @@
 
 <section class="gm-section">
   <div class="gm-container">
-    <div class="gm-section-head gm-section-head--actions">
-      <div>
-        <span class="gm-eyebrow">Newest first</span>
-        <h2>Past recommendations</h2>
-      </div>
-      <button class="btn gm-btn-outline" id="gm-history-clear" type="button">
+    <div class="gm-history-actions">
+      <button class="btn gm-btn-outline gm-history-clear-btn" id="gm-history-clear" type="button">
         <i class="bi bi-trash3"></i> Clear history
       </button>
     </div>

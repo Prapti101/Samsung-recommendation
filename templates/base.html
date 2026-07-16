@@ -45,7 +45,7 @@
 <nav class="gm-navbar" id="gm-navbar">
   <div class="gm-container gm-navbar-inner">
     <a class="gm-brand" href="{{ url_for('home') }}">
-      <span class="gm-brand-mark">◆</span>
+      <img class="gm-brand-mark" src="{{ url_for('static', filename='brand/logo.png') }}" alt="" aria-hidden="true">
       <span>Galaxy&nbsp;Compass</span>
     </a>
     <div class="gm-nav-links">
@@ -71,7 +71,12 @@
       <a href="{{ url_for('wishlist_page') }}" class="gm-nav-icon" title="Wishlist" aria-label="Wishlist">
         <i class="bi bi-heart"></i>
       </a>
-      <a href="{{ url_for('home') }}#build" class="gm-nav-shop">Shop</a>
+      {# Samsung India's storefront — every category is shoppable from here.
+         (shop.samsung.com/in redirects to this same page, so it is the
+         canonical entry point.) Opens in a new tab like every other external
+         Samsung link on the site, so the user doesn't lose their session. #}
+      <a href="https://www.samsung.com/in/" class="gm-nav-shop"
+         target="_blank" rel="noopener noreferrer">Shop</a>
     </div>
   </div>
 </nav>
@@ -87,7 +92,7 @@
     <div class="gm-footer-top">
       <!-- Brand / About -->
       <div class="gm-footer-brandcol">
-        <div class="gm-brand gm-brand-footer"><span class="gm-brand-mark">◆</span><span>Galaxy Compass</span></div>
+        <div class="gm-brand gm-brand-footer"><img class="gm-brand-mark" src="{{ url_for('static', filename='brand/logo.png') }}" alt="" aria-hidden="true"><span>Galaxy Compass</span></div>
         <p class="gm-footer-about">The intelligent way to match a Samsung Galaxy phone to how you live — camera, performance, battery and value, weighed transparently with a Weighted Sum Model.</p>
         <div class="gm-footer-social">
           <a href="https://www.instagram.com/samsungindia/" target="_blank" rel="noopener" aria-label="Instagram"><i class="bi bi-instagram"></i></a>

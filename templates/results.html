@@ -20,7 +20,6 @@
 <section class="gm-results-hero">
   <div class="gm-container">
     <a href="{{ url_for('home') }}" class="gm-back-link"><i class="bi bi-arrow-left"></i> Start over</a>
-    <span class="gm-eyebrow">{{ persona.emoji }} {{ persona.name }}</span>
     <h1 class="gm-results-title">Your Top 3 Galaxy Matches</h1>
     <p class="gm-results-sub">Budget: <strong>₹{{ '{:,}'.format(budget) }}</strong> &nbsp;·&nbsp;
       Weights used —
@@ -138,8 +137,8 @@
               <i class="bi bi-arrow-left-right"></i> Compare
             </button>
             <a class="btn gm-btn-primary gm-btn-lg gm-match-buy" target="_blank" rel="noopener"
-               href="https://www.samsung.com/in/smartphones/all-smartphones/">
-              <i class="bi bi-bag-check"></i> Buy now
+               href="{{ phone.official_url }}">
+              <i class="bi bi-box-arrow-up-right"></i> Explore now
             </a>
           </div>
 
@@ -190,7 +189,7 @@
           </ul>
           <div class="gm-more-actions">
             <a class="btn gm-btn-primary gm-btn-sm gm-more-explore" target="_blank" rel="noopener"
-               href="https://www.samsung.com/in/smartphones/all-smartphones/">
+               href="{{ phone.official_url }}">
               Explore phone <i class="bi bi-arrow-right"></i>
             </a>
             <button class="btn gm-btn-outline gm-btn-sm gm-compare-add" data-phone-id="{{ phone.phone_id }}" data-phone-name="{{ phone.model }}">
@@ -456,7 +455,9 @@
       </div>
 
       <div class="gm-together-grid">
-        <a class="gm-together-card gm-together-card--buds" href="https://www.samsung.com/in/audio-devices/galaxy-buds/" target="_blank" rel="noopener">
+        {# samsung.com/in/audio-devices/galaxy-buds/ 404s — Buds live under
+           /audio-sound/. Verified 200. #}
+        <a class="gm-together-card gm-together-card--buds" href="https://www.samsung.com/in/audio-sound/galaxy-buds/" target="_blank" rel="noopener">
           <div class="gm-together-overlay"></div>
           <div class="gm-together-top">
             <h3 class="gm-together-name"><span class="gm-together-name-serif">Galaxy</span> Buds</h3>
@@ -478,7 +479,9 @@
           </div>
         </a>
 
-        <a class="gm-together-card gm-together-card--tag" href="https://www.samsung.com/in/mobile-accessories/galaxy-smarttag/" target="_blank" rel="noopener">
+        {# samsung.com/in/mobile-accessories/galaxy-smarttag/ 404s — this is the
+           live SmartTag2 product page. Verified 200. #}
+        <a class="gm-together-card gm-together-card--tag" href="https://www.samsung.com/in/mobile-accessories/galaxy-smarttag2-black-ei-t5600bbegin/" target="_blank" rel="noopener">
           <div class="gm-together-overlay"></div>
           <div class="gm-together-top">
             <h3 class="gm-together-name"><span class="gm-together-name-serif">Galaxy</span> SmartTag</h3>
@@ -491,68 +494,6 @@
       </div>
     </section>
 
-
-    <!-- ============================================================
-         SECTION · BUDGET SIMULATOR (USP)
-         Adjust the budget up/down and re-run the SAME recommendation
-         (same persona / weights) for the simulated budget. Rendered by
-         static/js/budget_simulator.js via /api/simulate-budget.
-         ============================================================ -->
-    <div class="gm-section-head gm-section-head--sm gm-mt-lg">
-      <span class="gm-eyebrow">What if?</span>
-      <h2>Budget Simulator</h2>
-      <p class="gm-section-sub">Adjust your budget up or down and click Update — we re-run the same recommendation with the same priorities for your simulated budget.</p>
-    </div>
-    <div class="gm-card gm-budget-sim-card" id="gm-budget-sim"
-         data-original-budget="{{ budget }}"
-         data-min-budget="{{ sim_min_budget }}"
-         data-max-budget="{{ sim_max_budget }}">
-      <div class="gm-budget-value" style="margin-top:0;">Original budget: <strong>₹{{ '{:,}'.format(budget) }}</strong></div>
-
-      <div class="gm-budget-row" style="margin-top:14px;">
-        <span class="gm-budget-min">−₹{{ '{:,}'.format(budget - sim_min_budget) }}</span>
-        <input type="range" class="gm-slider" id="sim-budget-slider"
-               min="{{ sim_min_budget - budget }}" max="{{ sim_max_budget - budget }}" step="1000" value="0">
-        <span class="gm-budget-max">+₹{{ '{:,}'.format(sim_max_budget - budget) }}</span>
-      </div>
-      <div class="gm-budget-value">
-        Budget change: <strong id="sim-change-display">₹0</strong>
-        &nbsp;·&nbsp; Simulated budget: <strong id="sim-budget-display">₹{{ '{:,}'.format(budget) }}</strong>
-      </div>
-
-      <div class="gm-budget-row gm-mt-sm" style="margin-top:18px;">
-        <label for="sim-budget-input" class="gm-budget-min" style="min-width:130px;">Or enter change (±₹)</label>
-        <input type="number" id="sim-budget-input" class="gm-textarea" style="max-width:200px;height:auto;padding:10px 14px;"
-               min="{{ sim_min_budget - budget }}" max="{{ sim_max_budget - budget }}" step="1000"
-               placeholder="0" aria-label="Enter budget change in rupees">
-        <button type="button" class="btn gm-btn-primary gm-btn-sm" id="sim-update-btn">
-          <i class="bi bi-arrow-repeat"></i> Update Recommendation
-        </button>
-      </div>
-
-      <div class="gm-sim-result" id="gm-sim-result"></div>
-    </div>
-
-    <script id="gm-budget-sim-data" type="application/json">{{ {"weights": weights_raw, "original_budget": budget, "original_top1": (top3[0] if top3 else None)} | tojson }}</script>
-
-
-    <!-- ===== End-of-journey CTA ===== -->
-    <div class="gm-next-cta" data-reveal>
-      <div class="gm-next-cta-inner">
-        <span class="gm-eyebrow">What's next</span>
-        <h2 class="gm-next-cta-title">Want to explore another Galaxy phone?</h2>
-        <p class="gm-next-cta-sub">You can refine your preferences or take the discovery quiz again to find another Galaxy phone that better matches your needs.</p>
-        <div class="gm-next-cta-actions">
-          <a href="{{ url_for('home') }}" class="btn gm-btn-primary gm-btn-lg">
-            <i class="bi bi-sliders"></i> Refine your preferences
-          </a>
-          <a href="{{ url_for('history_page') }}" class="btn gm-btn-outline gm-btn-lg">
-            <i class="bi bi-clock-history"></i> View recommendation history
-          </a>
-        </div>
-        <p class="gm-next-cta-note"><i class="bi bi-check2-circle"></i> This recommendation has been saved to your history automatically.</p>
-      </div>
-    </div>
 
     {% endif %}
   </div>
@@ -579,6 +520,5 @@
 <script id="recommendation-history-data" type="application/json">{{ history_payload|tojson }}</script>
 <script src="{{ url_for('static', filename='js/results.js') }}"></script>
 <script src="{{ url_for('static', filename='js/insights.js') }}"></script>
-<script src="{{ url_for('static', filename='js/budget_simulator.js') }}"></script>
 {% endif %}
 {% endblock %}

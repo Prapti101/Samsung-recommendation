@@ -14,16 +14,46 @@
 (function () {
   "use strict";
 
-  // Display-only flagship dataset (name / series / tagline / accent / colour).
+  // Display-only showcase data (name / series / tagline / accent / colour).
+  // Newest first: the 2026 arrivals lead, then the latest 2025 flagships.
+  // Names, prices and specs come from raw_phones.xlsx; taglines are the only
+  // hand-written field and each one only restates a spec from that sheet.
+  // NOTE: the S26 Ultra and S26+ are in the spreadsheet but have no product
+  // photo in static/img, so they are intentionally left out rather than shown
+  // with another phone's picture. Drop s26_ultra / s26_plus images in and they
+  // can be added here.
   const PHONES = [
-    { name: "Galaxy S25 Ultra", series: "Galaxy S", tagline: "Built for creators — the ultimate camera flagship.", accent: "#2F6FED", body: "linear-gradient(150deg,#2a2f3a,#0e1118)", img: "s25_ultra", isNew: true,  price: "₹1,34,999" },
-    { name: "Galaxy Z Fold6",   series: "Galaxy Z", tagline: "Unfold more — a tablet and phone in one.",           accent: "#6C5CE7", body: "linear-gradient(150deg,#20242c,#0b0d12)", img: "z_fold6",   isNew: true,  price: "₹1,64,999" },
-    { name: "Galaxy Z Flip6",   series: "Galaxy Z", tagline: "Compact powerhouse that flips the script.",          accent: "#E84393", body: "linear-gradient(150deg,#2b2530,#120d14)", img: "z_flip6",   isNew: true,  price: "₹1,09,999" },
-    { name: "Galaxy S24 FE",    series: "Galaxy S", tagline: "Flagship experience, everyday value.",               accent: "#00B894", body: "linear-gradient(150deg,#1f2a2a,#0a1010)", img: "s24_fe",    isNew: false, price: "₹59,999" },
-    { name: "Galaxy A55 5G",    series: "Galaxy A", tagline: "Power meets value in the everyday hero.",            accent: "#0984E3", body: "linear-gradient(150deg,#232a33,#0c1016)", img: "a55",      isNew: false, price: "₹39,999" },
-    { name: "Galaxy M55 5G",    series: "Galaxy M", tagline: "Endurance-first, made to keep going.",               accent: "#E17055", body: "linear-gradient(150deg,#2a2320,#120c0a)", img: "m55",      isNew: false, price: "₹26,999" },
+    { name: "Galaxy Z Fold7",   series: "Galaxy Z", tagline: "Unfold an 8-inch canvas with a 200MP main camera.",  accent: "#6C5CE7", body: "linear-gradient(150deg,#20242c,#0b0d12)", img: "z_fold7",   isNew: true,  price: "₹1,74,999" },
+    { name: "Galaxy S26",       series: "Galaxy S", tagline: "The new flagship era, in a 6.3-inch frame.",         accent: "#2F6FED", body: "linear-gradient(150deg,#2a2f3a,#0e1118)", img: "s26",       isNew: true,  price: "₹87,999" },
+    { name: "Galaxy S25 Ultra", series: "Galaxy S", tagline: "Built for creators — the ultimate camera flagship.", accent: "#2F6FED", body: "linear-gradient(150deg,#2a2f3a,#0e1118)", img: "s25_ultra", isNew: false, price: "₹1,29,999" },
+    { name: "Galaxy Z Flip7",   series: "Galaxy Z", tagline: "Compact powerhouse that flips the script.",          accent: "#E84393", body: "linear-gradient(150deg,#2b2530,#120d14)", img: "z_flip7",   isNew: false, price: "₹1,04,999" },
+    { name: "Galaxy S25+",      series: "Galaxy S", tagline: "Flagship power with room to breathe.",               accent: "#0984E3", body: "linear-gradient(150deg,#232a33,#0c1016)", img: "s25_plus",  isNew: false, price: "₹99,999" },
+    { name: "Galaxy S25",       series: "Galaxy S", tagline: "Everything you love, in a compact flagship.",        accent: "#0984E3", body: "linear-gradient(150deg,#232a33,#0c1016)", img: "s25",       isNew: false, price: "₹79,999" },
+    { name: "Galaxy S25 FE",    series: "Galaxy S", tagline: "Flagship experience, everyday value.",               accent: "#00B894", body: "linear-gradient(150deg,#1f2a2a,#0a1010)", img: "s25_fe",    isNew: false, price: "₹59,999" },
+    { name: "Galaxy A56 5G",    series: "Galaxy A", tagline: "Power meets value in the everyday hero.",            accent: "#E17055", body: "linear-gradient(150deg,#232a33,#0c1016)", img: "a56",       isNew: false, price: "₹39,999" },
   ];
   const IMG_BASE = "/static/img/";
+
+  // Official samsung.com links, keyed by model, emitted by the server from the
+  // catalog (phones.csv -> official_url). Kept out of the PHONES array above so
+  // there is exactly one source of truth for device links.
+  const OFFICIAL_URLS = (function () {
+    const el = document.getElementById("gm-official-urls");
+    if (!el) return {};
+    try {
+      return JSON.parse(el.textContent) || {};
+    } catch (_) {
+      return {};
+    }
+  })();
+
+  // Falls back to a samsung.com search rather than a guessed product slug.
+  function officialUrl(name) {
+    return (
+      OFFICIAL_URLS[name] ||
+      "https://www.samsung.com/in/search/?searchvalue=" + encodeURIComponent(name)
+    );
+  }
 
   const reduceMotion = window.matchMedia &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -120,8 +150,9 @@
     const prevBtn = document.getElementById("gm-lux-carousel-prev");
     const nextBtn = document.getElementById("gm-lux-carousel-next");
 
-    // Latest five (exclude the last budget item to keep it "latest")
-    const items = PHONES.slice(0, 5);
+    // Every showcase phone above is a current model, so all of them are shown
+    // (this used to cap at five to drop an older budget entry).
+    const items = PHONES;
 
     function badgeClass(series) {
       return "gm-lux-badge--" + series.replace("Galaxy ", "").toLowerCase();
@@ -140,15 +171,18 @@
             '<p class="gm-lux-card-tag">' + p.tagline + "</p>" +
             '<div class="gm-lux-card-foot">' +
               '<span class="gm-lux-card-price">' + p.price + '<small>onwards</small></span>' +
-              '<a href="#build" class="gm-lux-card-btn">Explore phone <i class="bi bi-arrow-right"></i></a>' +
+              '<a href="' + officialUrl(p.name) + '" class="gm-lux-card-btn" target="_blank" rel="noopener">Explore phone <i class="bi bi-arrow-right"></i></a>' +
             "</div>" +
           "</div>" +
         "</article>"
       );
     }
 
-    // Duplicate the set for a seamless infinite-feeling loop.
-    track.innerHTML = items.map(cardHtml).join("") + items.map(cardHtml).join("");
+    // Each phone appears exactly once. (The set used to be rendered twice to
+    // pad the strip, which just showed every phone a second time — autoplay
+    // rewinds to the start at the end rather than looping through a clone, so
+    // the duplicate served no purpose.)
+    track.innerHTML = items.map(cardHtml).join("");
     const cards = Array.from(track.children);
 
     // Centre-largest scaling based on distance from viewport centre.

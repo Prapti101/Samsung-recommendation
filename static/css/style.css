@@ -150,11 +150,14 @@ button{font-family:var(--gm-font-body);}
   font-weight:700; font-size:1.15rem;
   color:var(--gm-blue-700);
 }
+/* Brand logo image (was a "◆" glyph, so this is sized rather than font-sized).
+   Sized above the 1.15rem wordmark's cap height so the mark reads clearly — at
+   26px its thin strokes were too fine to make out. */
 .gm-brand-mark{
-  color:var(--gm-blue-500);
-  font-size:1.1rem;
-  transform:rotate(0deg);
   display:inline-block;
+  width:38px; height:38px;
+  object-fit:contain;
+  flex-shrink:0;
 }
 .gm-nav-links{display:flex; gap:28px;}
 .gm-nav-links a{
@@ -3116,4 +3119,259 @@ body.gm-embedded #gm-scroll-bg{display:none;}
   .gm-cat-filter{width:100%;}
   .gm-cat-filter--price{flex-basis:100%;}
   .gm-cat-chips{flex-wrap:wrap;}
+}
+
+/* =========================================================================
+   Recommendation History — the "Newest first" eyebrow and "Past
+   recommendations" heading were removed, so the Clear history button is now
+   the only thing in this row. The old wrapper used space-between, which would
+   push a lone button to the LEFT, so this row right-aligns it explicitly.
+   ========================================================================= */
+.gm-history-actions{
+  display:flex; justify-content:flex-end;
+  margin-bottom:22px;
+}
+.gm-history-clear-btn{
+  padding:12px 26px;
+  font-size:.95rem;
+}
+.gm-history-clear-btn i{font-size:1rem; margin-right:2px;}
+
+/* =========================================================================
+   HERO 3D MODEL — real .glb Galaxy, replacing the old flat front/back images.
+   Sized to the footprint the image phone used (210x430) so the stage, ghost
+   neighbours and drop shadow all still line up. Rotation comes from
+   model-viewer's own auto-rotate, not a CSS transform.
+   ========================================================================= */
+.gm-lux-model{
+  display:block;
+  width:300px; height:460px;
+  background:transparent;
+  --poster-color:transparent;          /* no flash of colour before load */
+  --progress-bar-color:var(--gm-blue-500);
+  --progress-mask:transparent;
+  cursor:grab;
+  outline:none;
+}
+.gm-lux-model:active{cursor:grabbing;}
+
+@media (max-width: 991px){
+  .gm-lux-model{width:260px; height:400px;}
+}
+@media (max-width: 560px){
+  .gm-lux-model{width:220px; height:340px;}
+}
+
+/* =========================================================================
+   DARK MODE — readable blues.
+   The dark theme re-pointed --gm-blue-700/100/50 but left --gm-blue-900/800/600
+   at their light-theme navy values, so anything using them as TEXT went nearly
+   invisible on the charcoal background:
+       blue-900 #0A1454 on #15171C -> 1.06:1   (headings: "Latest Galaxy Collection")
+       blue-800 #101C6E on #15171C -> 1.21:1
+       blue-600 #1E45C6 on #15171C -> 2.32:1   (prices, links, hovers)
+   The tokens themselves are NOT re-pointed, because the same three also paint
+   solid fills that must stay dark or stay saturated:
+       .gm-footer            background:var(--gm-blue-900)   (navy footer)
+       .gm-btn-primary etc.  background:...var(--gm-blue-600) (white text on blue)
+   So only the text-colour usages are corrected here, dark-mode only. Light mode
+   is untouched.
+   ========================================================================= */
+:root[data-theme="dark"]{
+  --gm-heading-on-dark:#E4EBFF;   /* soft blue-white: keeps the brand tint */
+  --gm-accent-on-dark:#8FB4FF;    /* = --gm-blue-300, 8.66:1 on the page bg */
+}
+
+/* ---- Headings / titles that were navy (--gm-blue-900) ---- */
+:root[data-theme="dark"] .gm-hero-title,
+:root[data-theme="dark"] .gm-section-head h2,
+:root[data-theme="dark"] .gm-how-card h3,
+:root[data-theme="dark"] .gm-results-title,
+:root[data-theme="dark"] .gm-rank-model,
+:root[data-theme="dark"] .gm-empty-state h3,
+:root[data-theme="dark"] .gm-history-entry-title,
+:root[data-theme="dark"] .gm-compare-head h3,
+:root[data-theme="dark"] .gm-community-bottom{
+  color:var(--gm-heading-on-dark);
+}
+/* Original rule uses !important, so this must match it to win. */
+:root[data-theme="dark"] .gm-spec-label{
+  color:var(--gm-heading-on-dark) !important;
+}
+/* Match-score numeral (--gm-blue-800) */
+:root[data-theme="dark"] .gm-rank-score .gm-ring-label span{
+  color:var(--gm-accent-on-dark);
+}
+
+/* ---- Accent text / icons / hovers that were --gm-blue-600 ----
+   Fills that use blue-600 as a BACKGROUND are deliberately excluded. */
+:root[data-theme="dark"] .gm-nav-links a:hover,
+:root[data-theme="dark"] .gm-nav-icon:hover,
+:root[data-theme="dark"] .gm-theme-opt:hover,
+:root[data-theme="dark"] .gm-back-link:hover,
+:root[data-theme="dark"] .gm-eyebrow,
+:root[data-theme="dark"] .gm-how-icon,
+:root[data-theme="dark"] .gm-rank-card--1 .gm-rank-badge,
+:root[data-theme="dark"] .gm-rank-price,
+:root[data-theme="dark"] .gm-compare-price,
+:root[data-theme="dark"] .gm-compare-score-num.gm-win,
+:root[data-theme="dark"] .gm-lux-carousel-arrow:hover,
+:root[data-theme="dark"] .gm-upgrade-match--better span,
+:root[data-theme="dark"] .gm-upgrade-delta,
+:root[data-theme="dark"] .gm-upgrade-features li i,
+:root[data-theme="dark"] .gm-empty-reco-icon,
+:root[data-theme="dark"] .gm-community-bottom i,
+:root[data-theme="dark"] .gm-cat-tag,
+:root[data-theme="dark"] .gm-cat-chip:hover,
+:root[data-theme="dark"] .gm-cat-check:hover,
+:root[data-theme="dark"] .gm-cat-reset:hover,
+:root[data-theme="dark"] .gm-source-card:hover .gm-source-arrow,
+:root[data-theme="dark"] .gm-footer-social a:hover,
+:root[data-theme="dark"] .gm-footer-col li a:hover{
+  color:var(--gm-accent-on-dark);
+}
+
+/* The catalog's active RAM chip keeps a solid blue fill + white label, so its
+   hover rule must not repaint the label. */
+:root[data-theme="dark"] .gm-cat-chip.is-active,
+:root[data-theme="dark"] .gm-cat-chip.is-active:hover{
+  color:#fff;
+}
+
+/* Persona / quiz cards are hard-coded to a white fill with near-black text in
+   both themes; on dark that white slab is the one thing left glaring. Tone the
+   surface down and lift the text so they read as cards, not lightboxes. */
+:root[data-theme="dark"] .gm-entry .gm-persona-card,
+:root[data-theme="dark"] .gm-quiz-option{
+  background:var(--gm-card);
+  border-color:#4A5160;
+  box-shadow:5px 5px 0 #0C0E12;
+}
+:root[data-theme="dark"] .gm-entry .gm-persona-card:hover,
+:root[data-theme="dark"] .gm-quiz-option:hover,
+:root[data-theme="dark"] .gm-entry .gm-persona-card:has(input:checked),
+:root[data-theme="dark"] .gm-quiz-option.is-selected{
+  background:#2B3242;
+  border-color:#8FB4FF;
+}
+:root[data-theme="dark"] .gm-entry .gm-persona-name,
+:root[data-theme="dark"] .gm-quiz-option-title,
+:root[data-theme="dark"] .gm-entry .gm-persona-card:hover .gm-persona-name,
+:root[data-theme="dark"] .gm-entry .gm-persona-card:has(input:checked) .gm-persona-name{
+  color:var(--gm-heading-on-dark);
+}
+:root[data-theme="dark"] .gm-entry .gm-persona-desc,
+:root[data-theme="dark"] .gm-entry .gm-persona-card:hover .gm-persona-desc,
+:root[data-theme="dark"] .gm-entry .gm-persona-card:has(input:checked) .gm-persona-desc{
+  color:var(--gm-text-secondary);
+}
+:root[data-theme="dark"] .gm-persona-check{
+  background:#8FB4FF; border-color:#8FB4FF; color:#10131A;
+}
+:root[data-theme="dark"] .gm-quiz-option::after{
+  background:#8FB4FF; color:#10131A;
+}
+
+/* =========================================================================
+   BEST MATCH card — fit one screen, bigger phone.
+   Measured before: card 1048px tall vs an 800px viewport (overflowed by 248px),
+   because the info column alone ran to 958px while the phone stage used only
+   510px of it — so the photo looked small inside a lot of dead space.
+   Below trims the info column's padding/margins and slightly compacts the
+   score ring, spec rows and bars (no content removed), and spends the reclaimed
+   height on a larger phone. Presentation only.
+   ========================================================================= */
+.gm-match-hero{padding:20px 30px;}
+
+.gm-match-name{font-size:clamp(1.5rem, 2.4vw, 2rem); margin:8px 0 4px;}
+.gm-match-priceline{margin-bottom:12px;}
+
+/* Score ring block */
+.gm-match-scoreblock{padding:12px 16px; margin-bottom:14px; gap:16px;}
+.gm-match-ring, .gm-match-ring .gm-ring-svg{width:78px; height:78px;}
+
+/* Spec grid: same eight specs, tighter rows */
+.gm-match-specs{margin-bottom:14px; gap:0 24px;}
+.gm-match-specs .gm-spec-item{padding:6px 0;}
+
+/* Recommendation breakdown */
+.gm-match-breakdown{margin-bottom:14px;}
+.gm-match-breakdown-title, .gm-match-why-title{margin-bottom:8px;}
+
+.gm-match-actions{margin-bottom:14px; gap:10px;}
+
+/* Why we picked this */
+.gm-match-why{padding:14px 16px;}
+.gm-match-why-text{font-size:.9rem; line-height:1.5;}
+
+/* The phone sits in a fixed box and is scaled to fit inside it (`contain`), so
+   it is never cropped — several product shots (a56, s24_plus, a05) have zero
+   padding and their handset touches the frame edge, so `cover` would slice it.
+   The old rule (`height:620; width:auto; max-width:100%`) let the column width
+   clamp landscape shots: a 1800x1200 photo wanted 930px, got 449px, and
+   collapsed to 299px tall inside a 620px stage — a small phone in ~320px of
+   dead space. Sizing the box to the column and letting the image fill it fixes
+   that; the emptiness itself came from padding baked into the source images,
+   which is trimmed by build_phone_images.py.
+   Height stays explicit so the stage holds its size while the lazy-loaded photo
+   decodes — `height:auto` collapses the column to 0 until the image lands. */
+.gm-match-stage{min-height:0; overflow:hidden;}
+.gm-match-photo{
+  width:100%;
+  height:480px;
+  object-fit:contain;
+  object-position:center;
+  transform:none;
+  animation:gm-match-float-fit 5s ease-in-out infinite;
+}
+@keyframes gm-match-float-fit{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-12px);}
+}
+
+@media (max-width: 991px){
+  .gm-match-photo{height:400px;}
+}
+@media (max-width: 560px){
+  .gm-match-photo{height:320px;}
+  .gm-match-hero{padding:20px 18px;}
+}
+
+/* Final trim to bring the Best Match card inside one viewport. Each override is
+   scoped to the match hero (.gm-match-*) so the shared .gm-score-bars used on
+   other pages is untouched. */
+.gm-match-bars{margin-top:8px; gap:6px;}
+.gm-match-scoreblock{padding:10px 16px;}
+.gm-match-specs .gm-spec-item{padding:5px 0;}
+.gm-match-price{font-size:1.35rem;}
+.gm-match-why{padding:12px 16px;}
+.gm-match-why-text{font-size:.86rem;}
+
+/* =========================================================================
+   Runner-up cards — centre the phone properly in its column.
+   The photo was `height:210px; width:auto; max-width:100%; transform:scale(1.14)`,
+   which had two faults now that build_phone_images.py has trimmed the padding:
+     * the 1.14 zoom (added only to hide that padding) pushed the image to ~199px
+       wide inside a 158px column, so it spilled ~20px each side and sat flush
+       against the card's edge rather than reading as centred;
+     * `max-width:100%` clamped landscape shots to the column width and collapsed
+       them to ~84px tall — the same bug the Best Match photo had.
+   Giving the photo the column's box and `object-fit:contain` centres it on both
+   axes at any source ratio, with nothing cropped and nothing spilling.
+   ========================================================================= */
+.gm-more-card{grid-template-columns:180px 1fr;}
+.gm-more-photo{
+  width:100%;
+  height:210px;
+  max-width:none;
+  object-fit:contain;
+  object-position:center;
+  transform:none;
+}
+/* Base is no longer zoomed, so the hover lift is a gentle nudge (was 1.14 -> 1.22). */
+.gm-more-card:hover .gm-more-photo{transform:scale(1.06) translateY(-4px);}
+
+@media (max-width: 640px){
+  /* Card stacks to one column here; keep the photo centred and contained. */
+  .gm-more-card{grid-template-columns:1fr;}
 }

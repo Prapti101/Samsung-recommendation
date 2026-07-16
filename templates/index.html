@@ -23,11 +23,35 @@
       <div class="gm-lux-ghost gm-lux-ghost--l" aria-hidden="true"></div>
       <div class="gm-lux-ghost gm-lux-ghost--r" aria-hidden="true"></div>
 
+      {# Real 3D Galaxy model. It replaces the flat front/back images that used
+         to be faked into a spin by home_hero.js — dropping the #gm-lux-phone id
+         makes that script's rotation no-op, so the wrapper's CSS float and the
+         stage shadow keep animating on their own. model-viewer handles the
+         rotation itself (auto-rotate) and lets visitors drag to orbit. #}
       <div class="gm-lux-phone-wrap" id="gm-lux-phone-wrap">
-        <div class="gm-lux-phone gm-lux-phone--img" id="gm-lux-phone">
-          <img class="gm-lux-face gm-lux-face--front" src="{{ url_for('static', filename='collection/hero_phone_front.png') }}" alt="Samsung Galaxy phone, front">
-          <img class="gm-lux-face gm-lux-face--back" src="{{ url_for('static', filename='collection/hero_phone_back.png') }}" alt="" aria-hidden="true">
-        </div>
+        <model-viewer
+          id="gm-lux-model"
+          class="gm-lux-model"
+          src="{{ url_for('static', filename='models/galaxy_s24.glb') }}"
+          alt="Interactive 3D model of a Samsung Galaxy phone"
+          auto-rotate
+          auto-rotate-delay="0"
+          rotation-per-second="34deg"
+          camera-controls
+          touch-action="pan-y"
+          disable-zoom
+          interaction-prompt="none"
+          shadow-intensity="0"
+          exposure="1.05"
+          {# This model's thin axis is X (bounding box 0.0089 x 0.1469 x 0.0711m),
+             so the screen faces along X, not the default -Z. Starting at
+             theta=90deg opens on the phone's face; at theta=0 it would appear
+             edge-on as a 9mm sliver. auto-rotate then spins from there. #}
+          camera-orbit="90deg 84deg auto"
+          field-of-view="26deg"
+          loading="eager"
+          reveal="auto">
+        </model-viewer>
       </div>
     </div>
 
@@ -40,7 +64,6 @@
 <section class="gm-section gm-lux-collection gm-section--grey" data-reveal>
   <div class="gm-container">
     <div class="gm-section-head">
-      <span class="gm-eyebrow">The lineup</span>
       <h2>Latest Galaxy Collection</h2>
       <p class="gm-section-sub">Explore the newest Galaxy phones — drag, swipe or use the arrows to browse.</p>
     </div>
@@ -59,7 +82,6 @@
 <section id="build" class="gm-section gm-lux-build gm-entry gm-section--blue" data-reveal>
   <div class="gm-container">
     <div class="gm-section-head gm-entry-head">
-      <span class="gm-eyebrow">Let's begin</span>
       <h2>Let's Get to Know You</h2>
       <p class="gm-section-sub">Answer in the way you feel most comfortable and we'll find the Galaxy phone that best matches your lifestyle.</p>
     </div>
@@ -193,7 +215,13 @@
 {% endblock %}
 
 {% block extra_scripts %}
+{# Official samsung.com links, keyed by model — the hero carousel's Explore
+   buttons read these so no URL is hardcoded in JS. #}
+<script id="gm-official-urls" type="application/json">{{ official_urls|tojson }}</script>
 <script src="{{ url_for('static', filename='js/home.js') }}"></script>
 <script src="{{ url_for('static', filename='js/home_entry.js') }}"></script>
 <script src="{{ url_for('static', filename='js/home_hero.js') }}"></script>
+{# <model-viewer> renders the hero's .glb. Loaded only on this page (it is the
+   only page with a 3D model) and as a module, so it never blocks rendering. #}
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
 {% endblock %}

@@ -160,12 +160,32 @@ def _phone_image_url(phone_id, model: str):
 
 def _samsung_explore_url(model: str) -> str:
     """
-    Build a Samsung India link for a model. We use the site search endpoint
+    Fallback Samsung India link for a model. We use the site search endpoint
     (rather than guessing exact product slugs) so the link always resolves to
     the right phone on samsung.com.
+
+    Only used when a phone has no official_url in the catalog — see
+    _official_url() below, which is what the Explore buttons actually read.
     """
     from urllib.parse import quote_plus
     return "https://www.samsung.com/in/search/?searchvalue=" + quote_plus(model)
+
+
+def _official_url(row) -> str:
+    """
+    The official samsung.com page for a phone.
+
+    Single source of truth for every "Explore" button in the app: the
+    `official_url` column of phones.csv, which build_phones_csv.py copies from
+    the spreadsheet's `explore_now`. If a row has no URL we fall back to a
+    samsung.com search for that model rather than inventing a product slug,
+    which would 404. Adding a phone to the spreadsheet with its URL is all any
+    future device card needs.
+    """
+    url = row.get("official_url") if hasattr(row, "get") else None
+    if url is not None and pd.notna(url) and str(url).strip():
+        return str(url).strip()
+    return _samsung_explore_url(row["model"])
 
 
 def _phone_feature_list(p: dict) -> list:
@@ -203,6 +223,9 @@ def _phone_to_dict(row: pd.Series) -> dict:
         # has no weight column). None -> the UI shows "—" rather than a guess.
         "weight_g": int(row["weight_g"]) if pd.notna(row["weight_g"]) else None,
         "wireless_charging": bool(int(row["wireless_charging"])) if "wireless_charging" in row and pd.notna(row["wireless_charging"]) else False,
+        # Official samsung.com page for this exact phone, straight from the
+        # spreadsheet. Every "Explore" button in the app reads this one field.
+        "official_url": _official_url(row),
         "category": row["category"],
         "image": _phone_image_url(int(row["phone_id"]), row["model"]),
         "camera_score": float(row["camera_score"]),
@@ -226,11 +249,17 @@ def home():
     # Budget slider bounds: fixed range ₹8,000 – ₹2,00,000 (per product spec).
     min_price = 8000
     max_price = 200000
+    # {model -> official samsung.com page} for the hero carousel's Explore
+    # links. The carousel's display data (taglines/colours) lives in
+    # home_hero.js, but its URLs come from the catalog like everywhere else, so
+    # no link is duplicated in JS.
+    official_urls = {row["model"]: _official_url(row) for _, row in df.iterrows()}
     return render_template(
         "index.html",
         personas=list_personas(),
         min_price=min_price,
         max_price=max_price,
+        official_urls=official_urls,
     )
 
 
@@ -415,7 +444,9 @@ def recommend():
                     "price_delta": pick["price_inr"] - current["price_inr"],
                     "features": _phone_feature_list(pick),
                     "gains": compute_gains(current, pick),
-                    "explore_url": _samsung_explore_url(pick["model"]),
+                    # pick is a _phone_to_dict, so it already carries the
+                    # catalog's official samsung.com link.
+                    "explore_url": pick["official_url"],
                 })
             else:
                 tiers.append({"delta": delta, "new_budget": ceiling,
@@ -423,7 +454,7 @@ def recommend():
 
         upgrade = {
             "current": current,
-            "current_explore_url": _samsung_explore_url(current["model"]),
+            "current_explore_url": current["official_url"],
             "tiers": tiers,
             "has_any": any(t["available"] for t in tiers),
         }
