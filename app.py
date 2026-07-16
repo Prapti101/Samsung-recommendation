@@ -202,6 +202,7 @@ def _phone_to_dict(row: pd.Series) -> dict:
         # Not every phone in the catalog has a recorded weight (raw_phones.xlsx
         # has no weight column). None -> the UI shows "—" rather than a guess.
         "weight_g": int(row["weight_g"]) if pd.notna(row["weight_g"]) else None,
+        "wireless_charging": bool(int(row["wireless_charging"])) if "wireless_charging" in row and pd.notna(row["wireless_charging"]) else False,
         "category": row["category"],
         "image": _phone_image_url(int(row["phone_id"]), row["model"]),
         "camera_score": float(row["camera_score"]),
@@ -469,6 +470,59 @@ def compare_page():
         phones=phones,
         phone_a=phone_a,
         phone_b=phone_b,
+    )
+
+
+@app.template_filter("inr")
+def _inr_filter(value) -> str:
+    """
+    Indian digit grouping: 164999 -> "1,64,999".
+
+    Matches gmFormatINR() in main.js (toLocaleString("en-IN")), so a price
+    rendered server-side and the same price re-rendered by JS read identically.
+    Python's "{:,}" would give the Western "164,999" and visibly flip on the
+    first slider drag.
+    """
+    digits = str(int(value))
+    if len(digits) <= 3:
+        return digits
+    head, tail = digits[:-3], digits[-3:]
+    head = re.sub(r"(\d)(?=(\d\d)+$)", r"\1,", head)
+    return head + "," + tail
+
+
+@app.route("/devices")
+def devices_page():
+    """
+    "View All" — the full Galaxy catalog as a product showcase.
+
+    Purely a presentation surface over the same catalog every other page reads:
+    it does not score, rank or recommend anything. Phones are ordered newest and
+    most premium first (price desc within release year) so the showcase opens on
+    the flagships, and all filtering happens client-side in devices.js.
+    """
+    df = load_engineered_phones(CSV_PATH)
+    df = df.sort_values(["release_year", "price_inr"], ascending=[False, False])
+    phones = [_phone_to_dict(row) for _, row in df.iterrows()]
+
+    max_price = int(df["price_inr"].max())
+    cheapest = int(df["price_inr"].min())
+
+    # A range input only lands on min + n*step, so the slider's minimum is
+    # chosen to put `max_price` exactly on that grid. Otherwise the priciest
+    # phone would be unreachable: with min=8000/step=1000 the highest selectable
+    # value is ₹1,64,000 and the ₹1,64,999 Fold would vanish at full-right.
+    # Anchoring from the top also keeps every label ending in 999 (₹59,999),
+    # which reads like a real price, and guarantees slider_min >= cheapest so
+    # the cheapest phone still shows at full-left.
+    slider_min = max_price - ((max_price - cheapest) // 1000) * 1000
+
+    return render_template(
+        "devices.html",
+        phones=phones,
+        min_price=slider_min,
+        max_price=max_price,
+        ram_options=sorted({int(r) for r in df["ram_gb"]}),
     )
 
 

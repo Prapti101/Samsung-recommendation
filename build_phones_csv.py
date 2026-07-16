@@ -72,6 +72,7 @@ FIELDNAMES = [
     "storage_gb", "battery_mah", "charging_w", "main_camera_mp",
     "ultra_wide_mp", "telephoto_mp", "front_camera_mp", "processor",
     "display_inch", "refresh_rate_hz", "display_type", "weight_g", "category",
+    "wireless_charging",
 ]
 
 
@@ -160,6 +161,9 @@ def main() -> None:
             # Never invented: carried over when known, blank otherwise.
             "weight_g": weights.get(model, ""),
             "category": category_for(row),
+            # "Yes"/"No" in the spreadsheet -> 1/0 so the catalog filter can
+            # use it directly.
+            "wireless_charging": 1 if str(row.get("wireless_charging", "")).strip().lower() == "yes" else 0,
         })
 
     with open(CSV_PATH, "w", newline="", encoding="utf-8") as fh:

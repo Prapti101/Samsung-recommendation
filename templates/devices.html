@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}All Galaxy Devices — Galaxy Compass{% endblock %}
+
+{% block content %}
+<section class="gm-results-hero">
+  <div class="gm-container">
+    <a href="{{ url_for('home') }}" class="gm-back-link"><i class="bi bi-arrow-left"></i> Home</a>
+    <span class="gm-eyebrow">The full lineup</span>
+    <h1 class="gm-results-title">All Galaxy Devices</h1>
+    <p class="gm-results-sub">Every Galaxy smartphone we track, from the entry-level A series to the foldables — explore the range at your own pace.</p>
+  </div>
+</section>
+
+<!-- Filter bar: sticks under the navbar as the catalog scrolls -->
+<div class="gm-cat-filters" id="gm-cat-filters">
+  <div class="gm-container gm-cat-filters-inner">
+
+    <div class="gm-cat-filter">
+      <span class="gm-cat-filter-label">Minimum RAM</span>
+      <div class="gm-cat-chips" id="gm-cat-ram" role="group" aria-label="Minimum RAM">
+        <button type="button" class="gm-cat-chip is-active" data-ram="0">Any</button>
+        {% for r in ram_options if r >= 6 %}
+        <button type="button" class="gm-cat-chip" data-ram="{{ r }}">{{ r }}GB+</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="gm-cat-filter gm-cat-filter--price">
+      <span class="gm-cat-filter-label">Max price: <strong id="gm-cat-price-out">₹{{ max_price|inr }}</strong></span>
+      <input type="range" class="gm-slider gm-cat-slider" id="gm-cat-price"
+             min="{{ min_price }}" max="{{ max_price }}" step="1000" value="{{ max_price }}"
+             aria-label="Maximum price">
+    </div>
+
+    <label class="gm-cat-check">
+      <input type="checkbox" id="gm-cat-wireless">
+      <span class="gm-cat-check-box" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
+      <span>Wireless charging only</span>
+    </label>
+
+    <button type="button" class="gm-cat-reset" id="gm-cat-reset">
+      <i class="bi bi-arrow-counterclockwise"></i> Reset
+    </button>
+  </div>
+</div>
+
+<section class="gm-section gm-cat-section">
+  <div class="gm-container">
+
+    <p class="gm-cat-count" id="gm-cat-count" aria-live="polite">
+      {{ phones|length }} phones
+    </p>
+
+    <div class="gm-cat-grid" id="gm-cat-grid">
+      {% for phone in phones %}
+      <article class="gm-cat-card"
+               data-ram="{{ phone.ram_gb }}"
+               data-price="{{ phone.price_inr }}"
+               data-wireless="{{ 1 if phone.wireless_charging else 0 }}"
+               data-name="{{ phone.model|lower }}">
+
+        <button class="gm-wishlist-toggle gm-cat-wish" type="button"
+                data-phone-id="{{ phone.phone_id }}" aria-label="Toggle wishlist">
+          <i class="bi bi-heart"></i>
+        </button>
+
+        <div class="gm-cat-media">
+          {% if phone.image %}
+          <img class="gm-cat-photo" src="{{ phone.image }}" alt="{{ phone.model }}" loading="lazy">
+          {% else %}
+          <div class="gm-cat-photo-fallback" aria-hidden="true"><i class="bi bi-phone"></i></div>
+          {% endif %}
+          <span class="gm-cat-badge">{{ phone.category|capitalize }}</span>
+        </div>
+
+        <div class="gm-cat-body">
+          <h3 class="gm-cat-name">{{ phone.model }}</h3>
+          <div class="gm-cat-price">₹{{ phone.price_inr|inr }}<small>onwards</small></div>
+
+          <ul class="gm-cat-specs">
+            <li><i class="bi bi-cpu"></i> {{ phone.processor }}</li>
+            <li><i class="bi bi-memory"></i> {{ phone.ram_gb }}GB · {{ phone.storage_gb }}GB</li>
+            <li><i class="bi bi-battery-charging"></i> {{ phone.battery_mah }}mAh · {{ phone.charging_w }}W</li>
+            <li><i class="bi bi-display"></i> {{ phone.display_inch }}" · {{ phone.refresh_rate_hz }}Hz</li>
+            <li><i class="bi bi-camera"></i> {{ phone.main_camera_mp }}MP main camera</li>
+          </ul>
+
+          {% if phone.wireless_charging %}
+          <span class="gm-cat-tag"><i class="bi bi-lightning-charge"></i> Wireless charging</span>
+          {% endif %}
+
+          <div class="gm-cat-actions">
+            <a class="btn gm-btn-primary gm-btn-sm" target="_blank" rel="noopener"
+               href="https://www.samsung.com/in/search/?searchvalue={{ phone.model|urlencode }}">
+              Explore phone <i class="bi bi-arrow-right"></i>
+            </a>
+            {# Links into the existing compare page with this phone preselected,
+               rather than re-implementing the results page's compare tray. #}
+            <a class="btn gm-btn-outline gm-btn-sm"
+               href="{{ url_for('compare_page', a=phone.phone_id) }}">
+              <i class="bi bi-arrow-left-right"></i> Compare
+            </a>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+
+    <div class="gm-cat-empty gm-hidden" id="gm-cat-empty">
+      <i class="bi bi-search"></i>
+      <h3>No phones match these filters</h3>
+      <p>Try raising the price ceiling or lowering the RAM requirement.</p>
+      <button type="button" class="btn gm-btn-outline gm-btn-sm" id="gm-cat-empty-reset">Reset filters</button>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/devices.js') }}"></script>
+{% endblock %}

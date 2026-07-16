@@ -2908,3 +2908,212 @@ body.gm-embedded #gm-scroll-bg{display:none;}
   .gm-community-sources{grid-template-columns:1fr;}
   .gm-community-card-head{flex-direction:column; align-items:flex-start;}
 }
+/* =========================================================================
+   VIEW ALL — full Galaxy catalog showcase (/devices).
+   Presentation-only surface: reuses the site's existing tokens, card language
+   and Samsung-blue accents. No new colour values are introduced.
+   ========================================================================= */
+
+/* ---- Sticky filter bar ---- */
+.gm-cat-filters{
+  position:sticky; top:72px; z-index:40;      /* sits under the floating navbar */
+  background:var(--gm-glass-bg);
+  border-top:1px solid var(--gm-glass-border);
+  border-bottom:1px solid var(--gm-glass-border);
+  -webkit-backdrop-filter:var(--gm-glass-blur);
+  backdrop-filter:var(--gm-glass-blur);
+}
+.gm-cat-filters-inner{
+  display:flex; align-items:center; flex-wrap:wrap;
+  gap:18px 32px;
+  padding-top:14px; padding-bottom:14px;
+}
+.gm-cat-filter{display:flex; align-items:center; gap:12px;}
+.gm-cat-filter-label{
+  font-size:.68rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--gm-text-muted); white-space:nowrap;
+}
+.gm-cat-filter-label strong{
+  color:var(--gm-blue-700); font-size:.8rem; letter-spacing:0;
+}
+
+/* Minimum-RAM chips */
+.gm-cat-chips{display:flex; gap:6px;}
+.gm-cat-chip{
+  border:1.5px solid var(--gm-border);
+  background:var(--gm-card);
+  color:var(--gm-text-secondary);
+  font-size:.8rem; font-weight:600;
+  padding:6px 14px; border-radius:100px;
+  cursor:pointer;
+  transition:background .2s ease, color .2s ease, border-color .2s ease, transform .2s ease;
+}
+.gm-cat-chip:hover{border-color:var(--gm-blue-500); color:var(--gm-blue-600); transform:translateY(-1px);}
+.gm-cat-chip.is-active{
+  background:var(--gm-blue-600); border-color:var(--gm-blue-600); color:#fff;
+  box-shadow:0 6px 14px rgba(47,111,237,.28);
+}
+
+/* Max-price slider */
+.gm-cat-filter--price{flex:1 1 260px; min-width:220px;}
+.gm-cat-slider{flex:1; min-width:140px;}
+
+/* Wireless-charging checkbox */
+.gm-cat-check{
+  display:inline-flex; align-items:center; gap:9px;
+  font-size:.82rem; font-weight:600; color:var(--gm-text-secondary);
+  background:var(--gm-card); border:1.5px solid var(--gm-border);
+  border-radius:100px; padding:7px 16px 7px 12px;
+  cursor:pointer; user-select:none;
+  transition:border-color .2s ease, color .2s ease;
+}
+.gm-cat-check:hover{border-color:var(--gm-blue-500); color:var(--gm-blue-600);}
+.gm-cat-check input{position:absolute; opacity:0; pointer-events:none;}
+.gm-cat-check-box{
+  display:grid; place-items:center;
+  width:18px; height:18px; border-radius:5px;
+  border:1.5px solid var(--gm-gray-400);
+  color:#fff; font-size:.7rem;
+  transition:background .2s ease, border-color .2s ease;
+}
+.gm-cat-check-box i{opacity:0; transform:scale(.5); transition:opacity .15s ease, transform .15s ease;}
+.gm-cat-check input:checked ~ .gm-cat-check-box{
+  background:var(--gm-blue-600); border-color:var(--gm-blue-600);
+}
+.gm-cat-check input:checked ~ .gm-cat-check-box i{opacity:1; transform:scale(1);}
+.gm-cat-check input:focus-visible ~ .gm-cat-check-box{box-shadow:0 0 0 4px var(--gm-blue-100);}
+
+/* Reset */
+.gm-cat-reset{
+  margin-left:auto;
+  background:none; border:0; cursor:pointer;
+  font-size:.8rem; font-weight:600; color:var(--gm-text-muted);
+  display:inline-flex; align-items:center; gap:6px;
+  transition:color .2s ease;
+}
+.gm-cat-reset:hover{color:var(--gm-blue-600);}
+
+/* ---- Catalog grid ---- */
+.gm-cat-section{padding-top:34px;}
+.gm-cat-count{
+  font-size:.85rem; font-weight:600; color:var(--gm-text-muted);
+  margin:0 0 20px;
+}
+.gm-cat-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(268px, 1fr));
+  gap:24px;
+}
+
+.gm-cat-card{
+  position:relative;
+  display:flex; flex-direction:column;
+  background:var(--gm-card);
+  border:1px solid var(--gm-border);
+  border-radius:var(--gm-radius-lg);
+  overflow:hidden;
+  box-shadow:var(--gm-shadow-sm);
+  transition:transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease, border-color .3s ease;
+}
+.gm-cat-card:hover{
+  transform:translateY(-6px);
+  box-shadow:var(--gm-shadow-md);
+  border-color:color-mix(in srgb, var(--gm-blue-500) 34%, var(--gm-border));
+}
+
+.gm-cat-media{
+  position:relative;
+  height:216px;
+  display:grid; place-items:center;
+  padding:16px 0 4px;
+  background:
+    radial-gradient(300px 160px at 50% 0%, var(--gm-tint-100), transparent 70%),
+    var(--gm-surface);
+  overflow:hidden;
+}
+/* Product shots are opaque white-background photos — multiply melts the white
+   into the tint so they read as cut-outs (same treatment as the home hero). */
+.gm-cat-photo{
+  max-height:184px; max-width:82%; width:auto; display:block;
+  mix-blend-mode:multiply;
+  transition:transform .4s cubic-bezier(.2,.8,.2,1);
+}
+:root[data-theme="dark"] .gm-cat-photo{mix-blend-mode:normal;}
+.gm-cat-card:hover .gm-cat-photo{transform:translateY(-5px) scale(1.05);}
+.gm-cat-photo-fallback{
+  display:grid; place-items:center;
+  width:96px; height:150px; border-radius:14px;
+  background:var(--gm-card-2); border:1.5px solid var(--gm-border);
+  color:var(--gm-text-muted); font-size:1.8rem;
+}
+.gm-cat-badge{
+  position:absolute; top:14px; left:14px;
+  font-size:.64rem; font-weight:700; letter-spacing:.04em;
+  color:var(--gm-blue-700); background:var(--gm-card);
+  border:1px solid var(--gm-blue-100);
+  padding:4px 10px; border-radius:100px;
+}
+.gm-cat-wish{position:absolute; top:12px; right:12px; z-index:2;}
+
+.gm-cat-body{
+  display:flex; flex-direction:column;
+  padding:20px 20px 22px;
+  flex:1;
+}
+.gm-cat-name{
+  font-family:var(--gm-font-display); font-weight:700; font-size:1.06rem;
+  color:var(--gm-text); margin:0 0 4px; line-height:1.25;
+}
+.gm-cat-price{
+  font-family:var(--gm-font-display); font-weight:700; font-size:1.1rem;
+  color:var(--gm-blue-700); margin-bottom:14px;
+}
+.gm-cat-price small{
+  font-family:var(--gm-font-body); font-weight:600; font-size:.68rem;
+  color:var(--gm-text-muted); margin-left:6px;
+}
+.gm-cat-specs{
+  list-style:none; margin:0 0 14px; padding:0;
+  display:flex; flex-direction:column; gap:7px;
+}
+.gm-cat-specs li{
+  display:flex; align-items:center; gap:8px;
+  font-size:.8rem; color:var(--gm-text-secondary); line-height:1.35;
+}
+.gm-cat-specs li i{color:var(--gm-blue-500); font-size:.9rem; flex-shrink:0;}
+.gm-cat-tag{
+  display:inline-flex; align-items:center; gap:6px; align-self:flex-start;
+  font-size:.7rem; font-weight:700;
+  color:var(--gm-blue-700); background:var(--gm-blue-50);
+  border:1px solid var(--gm-blue-100);
+  padding:4px 10px; border-radius:100px; margin-bottom:14px;
+}
+.gm-cat-actions{
+  display:flex; gap:8px; margin-top:auto;
+}
+.gm-cat-actions .btn{flex:1; justify-content:center; white-space:nowrap;}
+
+/* ---- Empty state ---- */
+.gm-cat-empty{
+  text-align:center; padding:64px 20px;
+  color:var(--gm-text-secondary);
+}
+.gm-cat-empty i{font-size:2rem; color:var(--gm-text-muted);}
+.gm-cat-empty h3{
+  font-family:var(--gm-font-display); font-size:1.15rem;
+  color:var(--gm-text); margin:14px 0 6px;
+}
+.gm-cat-empty p{font-size:.9rem; margin:0 0 18px;}
+
+/* ---- Responsive ---- */
+@media (max-width:900px){
+  .gm-cat-filters{position:static;}
+  .gm-cat-filters-inner{gap:14px 20px;}
+  .gm-cat-reset{margin-left:0;}
+}
+@media (max-width:560px){
+  .gm-cat-grid{grid-template-columns:1fr; gap:18px;}
+  .gm-cat-filter{width:100%;}
+  .gm-cat-filter--price{flex-basis:100%;}
+  .gm-cat-chips{flex-wrap:wrap;}
+}

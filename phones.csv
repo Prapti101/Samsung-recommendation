@@ -1,48 +1,48 @@
-phone_id,brand,model,release_year,price_inr,ram_gb,storage_gb,battery_mah,charging_w,main_camera_mp,ultra_wide_mp,telephoto_mp,front_camera_mp,processor,display_inch,refresh_rate_hz,display_type,weight_g,category
-1,Samsung,Galaxy Z Fold7,2025,159999,12,1024,4400,25,50,12,10,10,Snapdragon 8 Gen 4,7.6,120,Foldable Dynamic AMOLED,,foldable
-2,Samsung,Galaxy Z Flip7,2025,104999,8,512,4000,25,50,12,0,10,Snapdragon 8 Gen 4,6.7,120,Foldable Dynamic AMOLED,,foldable
-3,Samsung,Galaxy S25 Ultra,2025,129999,12,1024,5000,45,200,50,50,12,Snapdragon 8 Gen 4,6.8,120,Dynamic AMOLED 2X,218,flagship
-4,Samsung,Galaxy S25+,2025,99999,12,512,4900,45,50,12,10,12,Exynos 2500,6.7,120,Dynamic AMOLED 2X,190,flagship
-5,Samsung,Galaxy S25,2025,79999,8,256,4000,25,50,12,10,12,Exynos 2500,6.2,120,Dynamic AMOLED 2X,162,flagship
-6,Samsung,Galaxy S25 FE,2025,59999,8,256,4500,25,50,12,8,12,Dimensity 9400,6.7,120,Dynamic AMOLED 2X,,midrange
-7,Samsung,Galaxy A56 5G,2025,39999,8,256,5000,25,50,12,5,32,Exynos 1580,6.6,120,Super AMOLED,,midrange
-8,Samsung,Galaxy A36 5G,2025,29999,6,128,5000,25,50,8,5,13,Snapdragon 6 Gen 3,6.6,120,Super AMOLED,,midrange
-9,Samsung,Galaxy M56 5G,2025,26999,8,256,6000,45,50,8,2,50,Exynos 1480,6.7,120,Super AMOLED Plus,,midrange
-10,Samsung,Galaxy F56 5G,2025,25999,8,256,6000,45,50,8,2,50,Exynos 1480,6.7,120,Super AMOLED Plus,,midrange
-11,Samsung,Galaxy A16 5G,2025,18999,4,256,5000,25,50,5,2,13,Exynos 1330,6.7,90,Super AMOLED,,budget
-12,Samsung,Galaxy M16 5G,2025,14999,4,128,6000,25,50,5,2,13,Dimensity 6100+,6.5,90,Super AMOLED,,budget
-13,Samsung,Galaxy F16 5G,2025,13999,4,128,6000,25,50,5,2,13,Dimensity 6100+,6.5,90,Super AMOLED,,budget
-14,Samsung,Galaxy A06,2025,9999,4,128,5000,25,50,2,0,8,Helio G85,6.7,60,PLS LCD,,budget
-15,Samsung,Galaxy Z Fold6,2024,164999,12,1024,4400,25,50,12,10,10,Snapdragon 8 Gen 3,7.6,120,Foldable Dynamic AMOLED,239,foldable
-16,Samsung,Galaxy Z Flip6,2024,109999,12,512,4000,25,50,12,0,10,Snapdragon 8 Gen 3,6.7,120,Foldable Dynamic AMOLED,187,foldable
-17,Samsung,Galaxy S24 Ultra,2024,129999,12,1024,5000,45,200,50,12,12,Snapdragon 8 Gen 3,6.8,120,Dynamic AMOLED 2X,232,flagship
-18,Samsung,Galaxy S24+,2024,99999,12,512,4900,45,50,12,10,12,Exynos 2400,6.7,120,Dynamic AMOLED 2X,196,flagship
-19,Samsung,Galaxy S24,2024,79999,8,256,4000,25,50,12,10,12,Exynos 2400,6.2,120,Dynamic AMOLED 2X,167,flagship
-20,Samsung,Galaxy S24 FE,2024,59999,8,256,4700,25,50,12,8,10,Exynos 2400e,6.7,120,Dynamic AMOLED 2X,213,midrange
-21,Samsung,Galaxy A55 5G,2024,39999,8,256,5000,25,50,12,5,32,Exynos 1480,6.6,120,Super AMOLED,213,midrange
-22,Samsung,Galaxy A35 5G,2024,30999,6,256,5000,25,50,8,5,13,Exynos 1380,6.6,120,Super AMOLED,209,midrange
-23,Samsung,Galaxy A25 5G,2024,26999,8,256,5000,25,50,8,2,13,Exynos 1280,6.5,120,Super AMOLED,201,midrange
-24,Samsung,Galaxy M55 5G,2024,26999,8,256,5000,45,50,8,2,50,Snapdragon 7 Gen 1,6.7,120,Super AMOLED Plus,190,midrange
-25,Samsung,Galaxy F55 5G,2024,26999,8,256,5000,45,50,8,2,50,Snapdragon 7 Gen 1,6.7,120,Super AMOLED Plus,,midrange
-26,Samsung,Galaxy A15 5G,2024,17999,4,128,5000,25,50,5,2,13,Dimensity 6100+,6.5,90,Super AMOLED,200,budget
-27,Samsung,Galaxy M15 5G,2024,13299,4,128,6000,25,50,5,2,13,Dimensity 6100+,6.5,90,Super AMOLED,,budget
-28,Samsung,Galaxy F15 5G,2024,12999,4,128,6000,25,50,5,2,13,Dimensity 6100+,6.5,90,Super AMOLED,,budget
-29,Samsung,Galaxy A05s,2024,11499,4,128,5000,25,50,2,2,13,Snapdragon 680,6.7,90,PLS LCD,,budget
-30,Samsung,Galaxy A05,2024,8699,4,128,5000,25,50,2,0,8,Helio G85,6.7,60,PLS LCD,,budget
-31,Samsung,Galaxy XCover7,2024,29999,6,128,4050,15,50,0,0,5,Dimensity 6100+,6.6,60,PLS LCD,,midrange
-32,Samsung,Galaxy Z Fold5,2023,154999,12,1024,4400,25,50,12,10,10,Snapdragon 8 Gen 2,7.6,120,Foldable Dynamic AMOLED,,foldable
-33,Samsung,Galaxy Z Flip5,2023,99999,8,512,3700,25,12,12,0,10,Snapdragon 8 Gen 2,6.7,120,Foldable Dynamic AMOLED,,foldable
-34,Samsung,Galaxy S23 Ultra,2023,124999,12,1024,5000,45,200,10,12,12,Snapdragon 8 Gen 2,6.8,120,Dynamic AMOLED 2X,,flagship
-35,Samsung,Galaxy S23+,2023,94999,8,512,4700,45,50,10,12,12,Snapdragon 8 Gen 2,6.6,120,Dynamic AMOLED 2X,,flagship
-36,Samsung,Galaxy S23,2023,74999,8,256,3900,25,50,10,12,12,Snapdragon 8 Gen 2,6.1,120,Dynamic AMOLED 2X,,flagship
-37,Samsung,Galaxy S23 FE,2023,59999,8,256,4500,25,50,8,12,10,Exynos 2200,6.4,120,Dynamic AMOLED 2X,,midrange
-38,Samsung,Galaxy A54 5G,2023,38999,8,256,5000,25,50,12,5,32,Exynos 1380,6.4,120,Super AMOLED,,midrange
-39,Samsung,Galaxy A34 5G,2023,30999,6,256,5000,25,48,8,5,13,Dimensity 1080,6.6,120,Super AMOLED,,midrange
-40,Samsung,Galaxy A24,2023,22999,4,128,5000,25,50,5,2,13,Helio G99,6.5,90,Super AMOLED,,midrange
-41,Samsung,Galaxy M34 5G,2023,17999,6,128,6000,25,50,8,2,13,Exynos 1280,6.5,120,Super AMOLED,,midrange
-42,Samsung,Galaxy F34 5G,2023,16999,6,128,6000,25,50,8,2,13,Exynos 1280,6.5,120,Super AMOLED,,midrange
-43,Samsung,Galaxy A14 5G,2023,16499,4,128,5000,15,50,2,2,13,Exynos 1330,6.6,90,PLS LCD,,budget
-44,Samsung,Galaxy M14 5G,2023,13490,4,128,6000,25,50,2,2,13,Exynos 1330,6.6,90,PLS LCD,,budget
-45,Samsung,Galaxy F14 5G,2023,12990,4,128,6000,25,50,2,0,13,Exynos 1330,6.6,90,PLS LCD,,budget
-46,Samsung,Galaxy A04s,2023,11999,3,128,5000,15,50,2,2,5,Exynos 850,6.5,90,PLS LCD,,budget
-47,Samsung,Galaxy A04e,2023,9299,3,64,5000,10,13,2,0,5,Helio P35,6.5,60,PLS LCD,,budget
+phone_id,brand,model,release_year,price_inr,ram_gb,storage_gb,battery_mah,charging_w,main_camera_mp,ultra_wide_mp,telephoto_mp,front_camera_mp,processor,display_inch,refresh_rate_hz,display_type,weight_g,category,wireless_charging
+1,Samsung,Galaxy Z Fold7,2025,159999,12,1024,4400,25,50,12,10,10,Snapdragon 8 Gen 4,7.6,120,Foldable Dynamic AMOLED,,foldable,1
+2,Samsung,Galaxy Z Flip7,2025,104999,8,512,4000,25,50,12,0,10,Snapdragon 8 Gen 4,6.7,120,Foldable Dynamic AMOLED,,foldable,1
+3,Samsung,Galaxy S25 Ultra,2025,129999,12,1024,5000,45,200,50,50,12,Snapdragon 8 Gen 4,6.8,120,Dynamic AMOLED 2X,218,flagship,1
+4,Samsung,Galaxy S25+,2025,99999,12,512,4900,45,50,12,10,12,Exynos 2500,6.7,120,Dynamic AMOLED 2X,190,flagship,1
+5,Samsung,Galaxy S25,2025,79999,8,256,4000,25,50,12,10,12,Exynos 2500,6.2,120,Dynamic AMOLED 2X,162,flagship,1
+6,Samsung,Galaxy S25 FE,2025,59999,8,256,4500,25,50,12,8,12,Dimensity 9400,6.7,120,Dynamic AMOLED 2X,,midrange,1
+7,Samsung,Galaxy A56 5G,2025,39999,8,256,5000,25,50,12,5,32,Exynos 1580,6.6,120,Super AMOLED,,midrange,0
+8,Samsung,Galaxy A36 5G,2025,29999,6,128,5000,25,50,8,5,13,Snapdragon 6 Gen 3,6.6,120,Super AMOLED,,midrange,0
+9,Samsung,Galaxy M56 5G,2025,26999,8,256,6000,45,50,8,2,50,Exynos 1480,6.7,120,Super AMOLED Plus,,midrange,0
+10,Samsung,Galaxy F56 5G,2025,25999,8,256,6000,45,50,8,2,50,Exynos 1480,6.7,120,Super AMOLED Plus,,midrange,0
+11,Samsung,Galaxy A16 5G,2025,18999,4,256,5000,25,50,5,2,13,Exynos 1330,6.7,90,Super AMOLED,,budget,0
+12,Samsung,Galaxy M16 5G,2025,14999,4,128,6000,25,50,5,2,13,Dimensity 6100+,6.5,90,Super AMOLED,,budget,0
+13,Samsung,Galaxy F16 5G,2025,13999,4,128,6000,25,50,5,2,13,Dimensity 6100+,6.5,90,Super AMOLED,,budget,0
+14,Samsung,Galaxy A06,2025,9999,4,128,5000,25,50,2,0,8,Helio G85,6.7,60,PLS LCD,,budget,0
+15,Samsung,Galaxy Z Fold6,2024,164999,12,1024,4400,25,50,12,10,10,Snapdragon 8 Gen 3,7.6,120,Foldable Dynamic AMOLED,239,foldable,1
+16,Samsung,Galaxy Z Flip6,2024,109999,12,512,4000,25,50,12,0,10,Snapdragon 8 Gen 3,6.7,120,Foldable Dynamic AMOLED,187,foldable,1
+17,Samsung,Galaxy S24 Ultra,2024,129999,12,1024,5000,45,200,50,12,12,Snapdragon 8 Gen 3,6.8,120,Dynamic AMOLED 2X,232,flagship,1
+18,Samsung,Galaxy S24+,2024,99999,12,512,4900,45,50,12,10,12,Exynos 2400,6.7,120,Dynamic AMOLED 2X,196,flagship,1
+19,Samsung,Galaxy S24,2024,79999,8,256,4000,25,50,12,10,12,Exynos 2400,6.2,120,Dynamic AMOLED 2X,167,flagship,1
+20,Samsung,Galaxy S24 FE,2024,59999,8,256,4700,25,50,12,8,10,Exynos 2400e,6.7,120,Dynamic AMOLED 2X,213,midrange,1
+21,Samsung,Galaxy A55 5G,2024,39999,8,256,5000,25,50,12,5,32,Exynos 1480,6.6,120,Super AMOLED,213,midrange,0
+22,Samsung,Galaxy A35 5G,2024,30999,6,256,5000,25,50,8,5,13,Exynos 1380,6.6,120,Super AMOLED,209,midrange,0
+23,Samsung,Galaxy A25 5G,2024,26999,8,256,5000,25,50,8,2,13,Exynos 1280,6.5,120,Super AMOLED,201,midrange,0
+24,Samsung,Galaxy M55 5G,2024,26999,8,256,5000,45,50,8,2,50,Snapdragon 7 Gen 1,6.7,120,Super AMOLED Plus,190,midrange,0
+25,Samsung,Galaxy F55 5G,2024,26999,8,256,5000,45,50,8,2,50,Snapdragon 7 Gen 1,6.7,120,Super AMOLED Plus,,midrange,0
+26,Samsung,Galaxy A15 5G,2024,17999,4,128,5000,25,50,5,2,13,Dimensity 6100+,6.5,90,Super AMOLED,200,budget,0
+27,Samsung,Galaxy M15 5G,2024,13299,4,128,6000,25,50,5,2,13,Dimensity 6100+,6.5,90,Super AMOLED,,budget,0
+28,Samsung,Galaxy F15 5G,2024,12999,4,128,6000,25,50,5,2,13,Dimensity 6100+,6.5,90,Super AMOLED,,budget,0
+29,Samsung,Galaxy A05s,2024,11499,4,128,5000,25,50,2,2,13,Snapdragon 680,6.7,90,PLS LCD,,budget,0
+30,Samsung,Galaxy A05,2024,8699,4,128,5000,25,50,2,0,8,Helio G85,6.7,60,PLS LCD,,budget,0
+31,Samsung,Galaxy XCover7,2024,29999,6,128,4050,15,50,0,0,5,Dimensity 6100+,6.6,60,PLS LCD,,midrange,0
+32,Samsung,Galaxy Z Fold5,2023,154999,12,1024,4400,25,50,12,10,10,Snapdragon 8 Gen 2,7.6,120,Foldable Dynamic AMOLED,,foldable,1
+33,Samsung,Galaxy Z Flip5,2023,99999,8,512,3700,25,12,12,0,10,Snapdragon 8 Gen 2,6.7,120,Foldable Dynamic AMOLED,,foldable,1
+34,Samsung,Galaxy S23 Ultra,2023,124999,12,1024,5000,45,200,10,12,12,Snapdragon 8 Gen 2,6.8,120,Dynamic AMOLED 2X,,flagship,1
+35,Samsung,Galaxy S23+,2023,94999,8,512,4700,45,50,10,12,12,Snapdragon 8 Gen 2,6.6,120,Dynamic AMOLED 2X,,flagship,1
+36,Samsung,Galaxy S23,2023,74999,8,256,3900,25,50,10,12,12,Snapdragon 8 Gen 2,6.1,120,Dynamic AMOLED 2X,,flagship,1
+37,Samsung,Galaxy S23 FE,2023,59999,8,256,4500,25,50,8,12,10,Exynos 2200,6.4,120,Dynamic AMOLED 2X,,midrange,1
+38,Samsung,Galaxy A54 5G,2023,38999,8,256,5000,25,50,12,5,32,Exynos 1380,6.4,120,Super AMOLED,,midrange,0
+39,Samsung,Galaxy A34 5G,2023,30999,6,256,5000,25,48,8,5,13,Dimensity 1080,6.6,120,Super AMOLED,,midrange,0
+40,Samsung,Galaxy A24,2023,22999,4,128,5000,25,50,5,2,13,Helio G99,6.5,90,Super AMOLED,,midrange,0
+41,Samsung,Galaxy M34 5G,2023,17999,6,128,6000,25,50,8,2,13,Exynos 1280,6.5,120,Super AMOLED,,midrange,0
+42,Samsung,Galaxy F34 5G,2023,16999,6,128,6000,25,50,8,2,13,Exynos 1280,6.5,120,Super AMOLED,,midrange,0
+43,Samsung,Galaxy A14 5G,2023,16499,4,128,5000,15,50,2,2,13,Exynos 1330,6.6,90,PLS LCD,,budget,0
+44,Samsung,Galaxy M14 5G,2023,13490,4,128,6000,25,50,2,2,13,Exynos 1330,6.6,90,PLS LCD,,budget,0
+45,Samsung,Galaxy F14 5G,2023,12990,4,128,6000,25,50,2,0,13,Exynos 1330,6.6,90,PLS LCD,,budget,0
+46,Samsung,Galaxy A04s,2023,11999,3,128,5000,15,50,2,2,5,Exynos 850,6.5,90,PLS LCD,,budget,0
+47,Samsung,Galaxy A04e,2023,9299,3,64,5000,10,13,2,0,5,Helio P35,6.5,60,PLS LCD,,budget,0
