@@ -810,7 +810,7 @@ button{font-family:var(--gm-font-body);}
 .gm-quiz-container{max-width:860px;}
 
 /* ---- Progress ---- */
-.gm-quiz-progress{margin-bottom:34px;}
+.gm-quiz-progress{margin-bottom:18px;}
 .gm-quiz-progress-bar{
   height:8px;
   background:var(--gm-gray-100);
@@ -855,67 +855,72 @@ button{font-family:var(--gm-font-body);}
 .gm-quiz-title{
   font-family:var(--gm-font-display);
   font-weight:700;
-  font-size:clamp(1.5rem, 3.4vw, 2.1rem);
-  line-height:1.2;
+  font-size:clamp(1.15rem, 2.2vw, 1.5rem);
+  line-height:1.22;
   letter-spacing:-.02em;
   color:var(--gm-ink);
-  margin:10px 0 8px;
+  margin:8px 0 5px;
 }
 .gm-quiz-sub{
   color:var(--gm-gray-600);
-  font-size:1rem;
-  margin-bottom:26px;
+  font-size:.88rem;
+  margin-bottom:16px;
 }
 
 /* ---- Option grids ---- */
-.gm-quiz-options{display:grid; gap:16px;}
+.gm-quiz-options{display:grid; gap:12px;}
 .gm-quiz-options--1{grid-template-columns:1fr;}
 .gm-quiz-options--2{grid-template-columns:repeat(2, 1fr);}
 .gm-quiz-options--3{grid-template-columns:repeat(3, 1fr);}
 
-/* ---- Option cards (large, tappable) ---- */
+/* ---- Option cards ----
+   Same neo-brutalist treatment as the persona cards on the home page: white
+   fill, hard black border, solid offset shadow, soft blue-grey on hover.
+   Sized so a whole question and all its options fit the embed without
+   scrolling. */
 .gm-quiz-option{
   position:relative;
   display:flex;
   flex-direction:column;
   align-items:flex-start;
-  gap:6px;
+  gap:4px;
   text-align:left;
-  background:var(--gm-card);
-  border:1.5px solid var(--gm-gray-200);
-  border-radius:var(--gm-radius-md);
-  padding:22px 20px;
+  background:#FFFFFF;
+  border:2px solid #14110C;
+  border-radius:12px;
+  padding:13px 15px;
   cursor:pointer;
-  transition:transform .22s cubic-bezier(.2,.8,.2,1),
-             box-shadow .22s ease, border-color .22s ease, background .22s ease;
+  box-shadow:5px 5px 0 #14110C;
+  transition:transform .14s ease, box-shadow .14s ease, background-color .14s ease;
 }
 .gm-quiz-option:hover{
-  border-color:var(--gm-blue-300);
-  transform:translateY(-3px);
-  box-shadow:var(--gm-shadow-md);
+  background:#E1E5F2;
+  border-color:#14110C;
+  transform:translate(-2px,-2px);
+  box-shadow:7px 7px 0 #14110C;
 }
-.gm-quiz-option:active{transform:translateY(-1px) scale(.995);}
+.gm-quiz-option:active{transform:translate(2px,2px); box-shadow:2px 2px 0 #14110C;}
 .gm-quiz-option:focus-visible{
   outline:none;
-  border-color:var(--gm-blue-500);
-  box-shadow:0 0 0 4px var(--gm-blue-100);
+  border-color:#14110C;
+  box-shadow:5px 5px 0 #14110C, 0 0 0 4px var(--gm-blue-100);
 }
 .gm-quiz-option.is-selected{
-  border-color:var(--gm-blue-500);
-  background:var(--gm-blue-50);
-  box-shadow:var(--gm-shadow-md);
+  border-color:#14110C;
+  background:#E1E5F2;
+  box-shadow:5px 5px 0 #14110C;
 }
-/* One UI-style check that appears on selection */
+/* Check that appears on selection — matches the persona card's black badge */
 .gm-quiz-option::after{
   content:"\2713";
   position:absolute;
-  top:14px; right:14px;
-  width:24px; height:24px;
+  top:10px; right:10px;
+  width:22px; height:22px;
   display:grid; place-items:center;
   border-radius:50%;
-  font-size:.8rem;
+  font-size:.72rem;
   color:#fff;
-  background:linear-gradient(135deg, var(--gm-blue-600), var(--gm-blue-500));
+  background:#14110C;
   transform:scale(0);
   opacity:0;
   transition:transform .25s cubic-bezier(.2,.8,.2,1), opacity .2s ease;
@@ -923,21 +928,21 @@ button{font-family:var(--gm-font-body);}
 .gm-quiz-option.is-selected::after{transform:scale(1); opacity:1;}
 
 .gm-quiz-option-icon{
-  font-size:1.9rem;
+  font-size:1.4rem;
   line-height:1;
-  margin-bottom:6px;
+  margin-bottom:3px;
   transition:transform .22s cubic-bezier(.2,.8,.2,1);
 }
 .gm-quiz-option:hover .gm-quiz-option-icon{transform:scale(1.12) rotate(-3deg);}
 .gm-quiz-option-title{
   font-family:var(--gm-font-display);
   font-weight:700;
-  font-size:1.02rem;
-  color:var(--gm-ink);
-  padding-right:26px;
+  font-size:.92rem;
+  color:#14110C;
+  padding-right:22px;
 }
 .gm-quiz-option-desc{
-  font-size:.86rem;
+  font-size:.78rem;
   color:var(--gm-gray-600);
   line-height:1.35;
 }
@@ -957,7 +962,7 @@ button{font-family:var(--gm-font-body);}
   align-items:center;
   justify-content:space-between;
   gap:14px;
-  margin-top:34px;
+  margin-top:20px;
 }
 .gm-quiz-nav .gm-quiz-next,
 .gm-quiz-nav .gm-quiz-finish{margin-left:auto;}
@@ -1565,7 +1570,7 @@ input[type="number"].gm-textarea{
 .gm-lux-card.is-centre{box-shadow:var(--gm-shadow-lg); border-color:color-mix(in srgb, var(--gm-blue-500) 30%, var(--gm-border));}
 .gm-lux-card:hover{box-shadow:var(--gm-shadow-md);}
 .gm-lux-card-media{
-  position:relative; height:270px;
+  position:relative; height:288px;
   display:grid; place-items:center;
   padding:18px 0 6px;
   background:
@@ -1573,12 +1578,19 @@ input[type="number"].gm-textarea{
     var(--gm-surface);
   overflow:hidden;
 }
+/* The product shots are opaque JPEG-style images on a white background (no
+   alpha), so a drop-shadow outlined that white rectangle instead of the phone.
+   `multiply` drops pure white to transparent, letting the card tint show
+   through, so the photo reads as if it were cut out. */
 .gm-lux-card-img{
-  height:230px; width:auto; display:block;
-  filter:drop-shadow(0 22px 34px rgba(10,15,40,.34));
+  height:252px; width:auto; display:block;
+  mix-blend-mode:multiply;
   transition:transform .45s cubic-bezier(.2,.8,.2,1);
   will-change:transform;
 }
+/* multiply against a dark surface would crush the phone into the background,
+   so dark theme keeps the image compositing normally. */
+:root[data-theme="dark"] .gm-lux-card-img{mix-blend-mode:normal;}
 .gm-lux-card:hover .gm-lux-card-img{transform:translateY(-8px) scale(1.06);}
 .gm-lux-new{
   position:absolute; top:14px; right:14px; z-index:2;
@@ -1753,10 +1765,13 @@ input[type="number"].gm-textarea{
   box-shadow:var(--gm-shadow-md);
   background:var(--gm-card);
 }
+/* Tall enough for the longest question (5 options over two columns) so the
+   embed never shows its own scrollbar — the whole question and every option
+   are visible at once. */
 #gm-quiz-frame{
   display:block;
   width:100%;
-  height:640px;
+  height:680px;
   border:0;
   background:transparent;
 }
@@ -2514,43 +2529,43 @@ body.gm-embedded .gm-quiz{padding-top:24px; padding-bottom:24px; min-height:0;}
 
 /* Widen the whole entry section so it uses the screen (full-width feel) */
 .gm-entry .gm-container{max-width:1500px;}
-.gm-entry-card{padding:40px clamp(20px, 4vw, 56px) 48px;}
+.gm-entry-card{padding:26px clamp(20px, 4vw, 56px) 30px;}
 
 /* Center the 3 tabs (Default Personas / Describe It / Persona Quiz) */
 .gm-mode-toggle-wrap{display:flex; justify-content:center; width:100%;}
 .gm-entry .gm-mode-toggle{
-  display:inline-flex; margin:4px auto 40px; justify-content:center;
+  display:inline-flex; margin:2px auto 24px; justify-content:center;
 }
 
 /* Persona grid: horizontal cards, 3 across on desktop → 2 → 1 */
 .gm-entry .gm-persona-grid{
   display:grid;
   grid-template-columns:repeat(3, 1fr);
-  gap:20px;
+  gap:14px;
   max-width:1400px; margin-left:auto; margin-right:auto;
 }
 @media (max-width:1100px){ .gm-entry .gm-persona-grid{grid-template-columns:repeat(2, 1fr);} }
 @media (max-width:680px){  .gm-entry .gm-persona-grid{grid-template-columns:1fr;} }
 
-/* Neo-brutalist persona cards: cream card, hard black border + solid offset
-   shadow, icon-top / title / description stacked, bright lime fill on hover.
-   (Matches the reference "build next" card style.) */
+/* Neo-brutalist persona cards: white card, hard black border + solid offset
+   shadow, icon-top / title / description stacked, soft blue-grey fill on hover.
+   Sized so the whole step (heading -> tabs -> all six cards) fits one screen. */
 .gm-entry .gm-persona-card{
   position:relative;
-  display:flex; flex-direction:column; align-items:flex-start; gap:14px;
+  display:flex; flex-direction:column; align-items:flex-start; gap:9px;
   text-align:left;
-  background:#F4F1E8;                       /* warm cream paper */
+  background:#FFFFFF;                       /* clean white card */
   border:2px solid #14110C;                 /* hard near-black border */
-  border-radius:14px;
-  padding:24px 26px 26px;
+  border-radius:12px;
+  padding:16px 18px 18px;
   cursor:pointer;
-  box-shadow:6px 6px 0 #14110C;             /* solid offset drop-shadow */
+  box-shadow:5px 5px 0 #14110C;             /* solid offset drop-shadow */
   transition:transform .14s ease, box-shadow .14s ease, background-color .14s ease;
 }
 .gm-entry .gm-persona-card:hover{
-  background:#C6F24E;                        /* bright lime fill on hover */
+  background:#E1E5F2;                        /* soft blue-grey fill on hover */
   transform:translate(-2px,-2px);
-  box-shadow:8px 8px 0 #14110C;
+  box-shadow:7px 7px 0 #14110C;
 }
 .gm-entry .gm-persona-card:active{
   transform:translate(2px,2px);
@@ -2562,18 +2577,18 @@ body.gm-embedded .gm-quiz{padding-top:24px; padding-bottom:24px; min-height:0;}
 .gm-entry .gm-persona-emoji{
   margin:0; width:auto; height:auto;
   background:none; box-shadow:none; border-radius:0;
-  font-size:1.95rem; line-height:1;
+  font-size:1.5rem; line-height:1;
   transition:none;
 }
 .gm-entry .gm-persona-card:hover .gm-persona-emoji{transform:none;}
 
 .gm-persona-text{display:flex; flex-direction:column; min-width:0;}
 .gm-entry .gm-persona-name{
-  font-family:var(--gm-font-display); font-weight:800; font-size:1.14rem;
-  color:#14110C; margin:0 0 8px; line-height:1.2;
+  font-family:var(--gm-font-display); font-weight:800; font-size:1rem;
+  color:#14110C; margin:0 0 5px; line-height:1.2;
 }
 .gm-entry .gm-persona-desc{
-  font-size:.88rem; color:#5A554C; line-height:1.55; margin:0; min-height:auto;
+  font-size:.8rem; color:#5A554C; line-height:1.45; margin:0; min-height:auto;
 }
 /* Keep text dark & readable on the lime hover / selected fill */
 .gm-entry .gm-persona-card:hover .gm-persona-name,
@@ -2583,19 +2598,19 @@ body.gm-embedded .gm-quiz{padding-top:24px; padding-bottom:24px; min-height:0;}
 
 /* Selected check: hard black badge, top-right */
 .gm-persona-check{
-  position:absolute; top:16px; right:16px; margin:0;
-  width:28px; height:28px; border-radius:50%;
-  display:grid; place-items:center; font-size:.9rem; color:#C6F24E;
+  position:absolute; top:12px; right:12px; margin:0;
+  width:24px; height:24px; border-radius:50%;
+  display:grid; place-items:center; font-size:.8rem; color:#FFFFFF;
   background:#14110C; border:2px solid #14110C;
   opacity:0; transform:scale(.5);
   transition:opacity .2s ease, transform .2s cubic-bezier(.34,1.4,.4,1);
 }
 
-/* Selected state: persistent lime fill + visible check */
+/* Selected state: persistent blue-grey fill + visible check */
 .gm-entry .gm-persona-card:has(input:checked){
-  background:#C6F24E;
+  background:#E1E5F2;
   border-color:#14110C;
-  box-shadow:6px 6px 0 #14110C;
+  box-shadow:5px 5px 0 #14110C;
 }
 .gm-entry .gm-persona-card:has(input:checked) .gm-persona-check{opacity:1; transform:scale(1);}
 
@@ -2740,6 +2755,21 @@ body.gm-embedded #gm-scroll-bg{display:none;}
   -webkit-backdrop-filter:var(--gm-glass-blur);
   backdrop-filter:var(--gm-glass-blur);
 }
+
+/* Clickable keycap in the "Describe It" hint — pressing Enter or clicking it
+   both run the recommendation. */
+.gm-kbd{
+  display:inline-block; vertical-align:middle;
+  font-family:var(--gm-font-body); font-size:.92rem; font-weight:700;
+  line-height:1; color:var(--gm-text);
+  background:var(--gm-card); border:1px solid var(--gm-border);
+  border-bottom-width:3px; border-radius:7px;
+  padding:6px 12px; margin:0 2px;
+  cursor:pointer;
+  transition:transform .12s ease, border-color .12s ease, background .12s ease;
+}
+.gm-kbd:hover{background:#E1E5F2; border-color:var(--gm-blue-500);}
+.gm-kbd:active{transform:translateY(2px); border-bottom-width:1px;}
 
 /* =========================================================================
    COMMUNITY INSIGHTS — spec-derived snapshot card + trusted source links.

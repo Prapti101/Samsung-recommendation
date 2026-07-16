@@ -70,6 +70,41 @@ document.addEventListener("DOMContentLoaded", () => {
   const hintBox = document.getElementById("gm-text-hint");
   let debounceTimer = null;
 
+  /* ---------- Enter submits the description ----------
+     The submit button sits below the budget/priority blocks, so describing a
+     phone and pressing Enter felt like nothing happened. Enter now runs the
+     recommendation straight away; Shift+Enter (and Ctrl/Cmd+Enter) still insert
+     a newline for anyone writing a longer description. The Enter chip in the
+     hint does the same thing on click. */
+  const runDescribe = () => {
+    if (!userText || !userText.value.trim()) return;   // nothing described yet
+    const form = document.getElementById("gm-form");
+    if (!form) return;
+    // requestSubmit so the form's own submit handlers (loading overlay) run,
+    // exactly as if the "Recommend my Top 3" button had been clicked.
+    if (form.requestSubmit) form.requestSubmit();
+    else form.submit();
+  };
+
+  if (userText) {
+    userText.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey) return;
+      e.preventDefault();
+      runDescribe();
+    });
+  }
+
+  // Delegated: the hint's innerHTML is rewritten on every keystroke, so the
+  // chip is a new element each time and can't hold its own listener.
+  if (hintBox) {
+    hintBox.addEventListener("click", (e) => {
+      if (e.target.closest("#gm-enter-key")) runDescribe();
+    });
+  }
+
+  // Markup for the clickable Enter chip, rebuilt whenever the hint re-renders.
+  const ENTER_KEY_HTML = ' <button type="button" class="gm-kbd" id="gm-enter-key">Enter</button>';
+
   if (userText) {
     userText.addEventListener("input", () => {
       clearTimeout(debounceTimer);
@@ -77,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (text.length < 8) {
         hintBox.classList.remove("gm-hint-active");
-        hintBox.innerHTML = '<i class="bi bi-magic"></i> We\'ll detect your persona and budget automatically as you type.';
+        hintBox.innerHTML = '<i class="bi bi-magic"></i> We\'ll detect your persona and budget automatically as you type' + ENTER_KEY_HTML;
         return;
       }
 
@@ -95,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (data.budget) {
               msg += ` &middot; Budget: <strong>${gmFormatINR(data.budget)}</strong>`;
             }
-            hintBox.innerHTML = msg;
+            hintBox.innerHTML = msg + ENTER_KEY_HTML;
           })
           .catch(() => {});
       }, 400);

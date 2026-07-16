@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ${specRow("Front Camera", `${a.front_camera_mp}MP`, `${b.front_camera_mp}MP`)}
             ${specRow("Display", `${a.display_inch}" · ${a.refresh_rate_hz}Hz`, `${b.display_inch}" · ${b.refresh_rate_hz}Hz`)}
             ${specRow("Display Type", a.display_type, b.display_type)}
-            ${specRow("Weight", `${a.weight_g}g`, `${b.weight_g}g`)}
+            ${specRow("Weight", a.weight_g ? `${a.weight_g}g` : "—", b.weight_g ? `${b.weight_g}g` : "—")}
             ${specRow("Category", a.category, b.category)}
           </tbody>
         </table>

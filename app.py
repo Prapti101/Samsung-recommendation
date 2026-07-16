@@ -82,6 +82,12 @@ def _is_valid_image(path: str) -> bool:
         return True
     if head[:6] in (b"GIF87a", b"GIF89a"):
         return True
+    # AVIF (ISO-BMFF "ftyp" box). A few assets in static/img are genuinely AVIF
+    # but carry a .webp extension; every current browser decodes them from the
+    # bytes regardless of the extension, so treat them as real images instead of
+    # dropping the phone's photo.
+    if head[4:8] == b"ftyp" and head[8:12] in (b"avif", b"avis", b"mif1", b"msf1"):
+        return True
     return False
 
 
@@ -193,7 +199,9 @@ def _phone_to_dict(row: pd.Series) -> dict:
         "display_inch": float(row["display_inch"]),
         "refresh_rate_hz": int(row["refresh_rate_hz"]),
         "display_type": row["display_type"],
-        "weight_g": int(row["weight_g"]),
+        # Not every phone in the catalog has a recorded weight (raw_phones.xlsx
+        # has no weight column). None -> the UI shows "—" rather than a guess.
+        "weight_g": int(row["weight_g"]) if pd.notna(row["weight_g"]) else None,
         "category": row["category"],
         "image": _phone_image_url(int(row["phone_id"]), row["model"]),
         "camera_score": float(row["camera_score"]),

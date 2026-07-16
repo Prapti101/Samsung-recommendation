@@ -122,9 +122,10 @@ def _dimensions(p: dict) -> list:
 def _spec_tradeoffs(p: dict) -> list:
     """Raw-spec caveats that don't come out of the score model."""
     out = []
-    if p.get("weight_g", 0) >= _HEAVY_G:
+    weight = p.get("weight_g")
+    if weight and weight >= _HEAVY_G:
         out.append("It's a heavy phone at {}g — handle one before you commit."
-                   .format(p["weight_g"]))
+                   .format(weight))
     if p.get("charging_w", 999) <= _SLOW_CHARGE_W:
         out.append("{}W charging is slow by current standards — expect a longer "
                    "top-up than rivals.".format(p["charging_w"]))

@@ -46,32 +46,67 @@ def compute_wsm_scores(df: pd.DataFrame, weights: dict) -> pd.DataFrame:
     return out
 
 
-def apply_budget_filter(df: pd.DataFrame, budget: int, tolerance: float = 0.0) -> pd.DataFrame:
+def apply_budget_filter(df: pd.DataFrame, budget: int,
+                        tolerance: float = 0.0) -> tuple:
     """
-    Filter phones to those within budget, allowing a small tolerance
-    above the stated budget (people often stretch a little for the
-    right phone) so we don't return an empty result set for tight budgets.
-    Falls back to the full catalog sorted by price if nothing qualifies.
+    Budget is a hard constraint, not a hint.
+
+    Returns (pool, within_budget):
+      * within_budget=True  -> every phone in `pool` costs <= the budget, so the
+                               caller ranks purely by persona match score.
+      * within_budget=False -> nothing in the catalog fits the budget. `pool` is
+                               the whole catalog and the caller ranks by price
+                               nearness instead, so the user is offered the
+                               closest phone to what they can spend.
+
+    Previously the no-fit case returned the five cheapest phones and let the
+    match score decide, which surfaced a phone at ~2x the stated budget (a
+    ₹13,000 budget recommended a ₹26,999 phone because it scored best of the
+    five). Ranking is now the caller's job -- see _rank_pool().
     """
     if not budget or budget <= 0:
-        return df
+        return df, True
 
     ceiling = budget * (1 + tolerance)
-    filtered = df[df["price_inr"] <= ceiling]
+    within = df[df["price_inr"] <= ceiling]
 
-    if filtered.empty:
-        # Nothing fits even with tolerance -- return the cheapest phones instead
-        # of an empty page, so the user still gets useful recommendations.
-        return df.nsmallest(5, "price_inr")
+    if within.empty:
+        return df.copy(), False
 
-    return filtered
+    return within, True
 
 
-def _generate_reason(row: pd.Series, weights: dict, rank: int) -> str:
+def _rank_pool(df: pd.DataFrame, budget: int, within_budget: bool) -> pd.DataFrame:
+    """
+    Order a scored pool.
+
+    Within budget: best persona match first -- the user can afford any of these,
+    so the only question is which suits them best.
+
+    Nothing within budget: nearest price first (match score breaks ties), so the
+    #1 pick is the closest phone to the stated budget rather than the
+    best-scoring expensive one.
+    """
+    if within_budget:
+        return df.sort_values("match_score", ascending=False).reset_index(drop=True)
+
+    out = df.copy()
+    out["_price_gap"] = (out["price_inr"] - budget).abs()
+    ranked = out.sort_values(["_price_gap", "match_score"],
+                             ascending=[True, False]).reset_index(drop=True)
+    return ranked.drop(columns=["_price_gap"])
+
+
+def _generate_reason(row: pd.Series, weights: dict, rank: int,
+                     budget: int = None, within_budget: bool = True) -> str:
     """
     Build a dynamic, plain-English explanation for why this phone was
     recommended, based on which of its scores are strongest *and* most
     heavily weighted for the active persona.
+
+    When nothing in the catalog fits the stated budget we say so outright:
+    the pick is over budget, and presenting it as a plain match would mislead
+    someone who told us exactly what they could spend.
     """
     # Rank each score dimension by (score * weight) contribution
     contributions = {
@@ -82,11 +117,38 @@ def _generate_reason(row: pd.Series, weights: dict, rank: int) -> str:
     }
     top_dims = sorted(contributions, key=contributions.get, reverse=True)
 
+    # Wording scales with the phone's ACTUAL score in each dimension. The
+    # catalog spans ₹8,699 to ₹164,999, so fixed superlatives would lie: a
+    # Helio G85 (3.5/10) is not "top-tier performance", and a 60Hz PLS LCD
+    # (2.7/10) is not "a gorgeous display". Flagship wording is unchanged.
+    def _tier(score, high, mid, low):
+        return high if score >= 7.5 else (mid if score >= 5.0 else low)
+
     phrase_bank = {
-        "camera": f"a standout {row['main_camera_mp']}MP camera system",
-        "performance": f"top-tier performance from its {row['processor']} chipset",
-        "battery": f"a strong {row['battery_mah']}mAh battery with {row['charging_w']}W charging",
-        "display": f"a gorgeous {row['display_inch']}\" {row['display_type']} display at {row['refresh_rate_hz']}Hz",
+        "camera": _tier(
+            row["camera_score"],
+            f"a standout {row['main_camera_mp']}MP camera system",
+            f"a capable {row['main_camera_mp']}MP camera",
+            f"a basic {row['main_camera_mp']}MP camera",
+        ),
+        "performance": _tier(
+            row["performance_score"],
+            f"top-tier performance from its {row['processor']} chipset",
+            f"solid everyday performance from its {row['processor']} chipset",
+            f"modest performance from its {row['processor']} chipset",
+        ),
+        "battery": _tier(
+            row["battery_score"],
+            f"a strong {row['battery_mah']}mAh battery with {row['charging_w']}W charging",
+            f"a dependable {row['battery_mah']}mAh battery with {row['charging_w']}W charging",
+            f"a modest {row['battery_mah']}mAh battery with {row['charging_w']}W charging",
+        ),
+        "display": _tier(
+            row["display_score"],
+            f"a gorgeous {row['display_inch']}\" {row['display_type']} display at {row['refresh_rate_hz']}Hz",
+            f"a solid {row['display_inch']}\" {row['display_type']} display at {row['refresh_rate_hz']}Hz",
+            f"a basic {row['display_inch']}\" {row['display_type']} display at {row['refresh_rate_hz']}Hz",
+        ),
     }
 
     lead_dim, second_dim = top_dims[0], top_dims[1]
@@ -102,6 +164,14 @@ def _generate_reason(row: pd.Series, weights: dict, rank: int) -> str:
     elif row["price_inr"] == row.get("_min_price_in_results"):
         reason += " It's also the most affordable option in your Top 3."
 
+    # Be explicit when we couldn't honour the budget, rather than quietly
+    # showing a pricier phone as if it fit.
+    if not within_budget and budget:
+        over = int(row["price_inr"]) - int(budget)
+        reason += (" Note: no Galaxy in our lineup costs ₹{:,} or less — this is "
+                   "the closest at ₹{:,} (₹{:,} over your budget)."
+                   .format(int(budget), int(row["price_inr"]), over))
+
     return reason
 
 
@@ -115,14 +185,17 @@ def get_top_recommendations(persona_weights: dict, budget: int = None,
     rows, with an added 'reason' column and 'rank' column.
     """
     df = load_engineered_phones(csv_path)
-    df = apply_budget_filter(df, budget)
+    df, within_budget = apply_budget_filter(df, budget)
     df = compute_wsm_scores(df, persona_weights)
 
-    ranked = df.sort_values("match_score", ascending=False).reset_index(drop=True)
+    ranked = _rank_pool(df, budget, within_budget)
     top = ranked.head(top_n).copy()
     top["_min_price_in_results"] = top["price_inr"].min()
     top["rank"] = range(1, len(top) + 1)
-    top["reason"] = top.apply(lambda r: _generate_reason(r, persona_weights, r["rank"]), axis=1)
+    top["reason"] = top.apply(
+        lambda r: _generate_reason(r, persona_weights, r["rank"],
+                                   budget=budget, within_budget=within_budget),
+        axis=1)
 
     return top.drop(columns=["_min_price_in_results"])
 
@@ -131,9 +204,9 @@ def get_full_ranking(persona_weights: dict, budget: int = None,
                       csv_path: str = "phones.csv") -> pd.DataFrame:
     """Return the entire catalog ranked by match score (used for 'see all results')."""
     df = load_engineered_phones(csv_path)
-    df = apply_budget_filter(df, budget)
+    df, within_budget = apply_budget_filter(df, budget)
     df = compute_wsm_scores(df, persona_weights)
-    ranked = df.sort_values("match_score", ascending=False).reset_index(drop=True)
+    ranked = _rank_pool(df, budget, within_budget)
     ranked["rank"] = range(1, len(ranked) + 1)
     return ranked
 

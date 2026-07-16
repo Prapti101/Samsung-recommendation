@@ -29,18 +29,43 @@ import numpy as np
 # Simplified relative rankings used only to differentiate processors for
 # scoring purposes -- not official benchmark figures.
 # ----------------------------------------------------------------------
+# Values are the `relative_performance_index` from raw_phones.xlsx (0-10),
+# scaled x10 onto this table's 0-100 scale. Taking them from the spreadsheet
+# keeps the catalog and the scorer in agreement instead of hand-guessing tiers.
+# Legacy names kept as aliases so older CSV exports still resolve.
 CHIPSET_TIER = {
+    "Snapdragon 8 Gen 4": 98,
+    "Snapdragon 8 Gen 3": 95,
+    "Exynos 2500": 94,
+    "Dimensity 9400": 92,
+    "Exynos 2400": 90,
+    "Exynos 2400e": 88,
+    "Snapdragon 8 Gen 2": 88,
+    "Exynos 1580": 78,
+    "Exynos 1480": 72,
+    "Exynos 2200": 70,
+    "Snapdragon 7 Gen 1": 68,
+    "Snapdragon 6 Gen 3": 65,
+    "Exynos 1380": 60,
+    "Dimensity 1080": 58,
+    "Exynos 1280": 56,
+    "Exynos 1330": 55,
+    "Dimensity 6100+": 50,
+    "Helio G99": 45,
+    "Snapdragon 680": 42,
+    "Helio G85": 38,
+    "Exynos 850": 30,
+    "Helio P35": 25,
+    # --- aliases for chipset names used by earlier catalog exports ---
+    "MediaTek Dimensity 6100+": 50,
     "Snapdragon 8 Elite": 98,
-    "Snapdragon 8 Gen 3": 92,
-    "Exynos 2400": 88,
-    "Exynos 2400e": 82,
     "Snapdragon 7 Gen 3": 68,
-    "Exynos 1480": 58,
-    "Exynos 1380": 48,
-    "Exynos 1280": 38,
-    "MediaTek Dimensity 6100+": 30,
 }
-DEFAULT_CHIPSET_SCORE = 40  # fallback for any unseen chipset
+# Deliberately below every real entry above: an unseen chipset must never
+# out-rank a chipset we actually know is slow. (The old default of 40 outranked
+# the Dimensity 6100+ at 30, so unknown budget silicon scored *better* than
+# known budget silicon.)
+DEFAULT_CHIPSET_SCORE = 20
 
 
 def _clip10(series: pd.Series) -> pd.Series:
@@ -132,15 +157,45 @@ def compute_value_score(df: pd.DataFrame) -> pd.Series:
     return _min_max_normalize(spec_per_sqrt_rupee)
 
 
+# Panel quality tiers (0-1). An LCD is a genuinely worse panel than any AMOLED
+# -- worse contrast, worse blacks, worse viewing angles -- so it must score
+# below them. The previous rule only tested for "2X" and gave everything else
+# 0.75, which graded the catalog's PLS LCD phones exactly like Super AMOLED.
+PANEL_TIER = {
+    "dynamic amoled 2x": 1.0,
+    "foldable dynamic amoled": 1.0,
+    "super amoled plus": 0.82,
+    "super amoled": 0.75,
+    "pls lcd": 0.45,
+    "tft lcd": 0.40,
+}
+DEFAULT_PANEL_TIER = 0.75    # unknown AMOLED-ish panel: unchanged from before
+
+
+def _panel_tier(display_type: pd.Series) -> pd.Series:
+    """
+    Map a display_type string to its quality tier. Matched most-specific-first
+    so "Super AMOLED Plus" doesn't get picked up by the "super amoled" entry.
+    """
+    s = display_type.astype(str).str.strip().str.lower()
+    tier = pd.Series(DEFAULT_PANEL_TIER, index=s.index, dtype=float)
+    for name in sorted(PANEL_TIER, key=len, reverse=True):
+        tier = tier.mask(s == name, PANEL_TIER[name])
+    # Fall back to substring matching for any unseen variant spelling.
+    unmatched = ~s.isin(PANEL_TIER)
+    for name in sorted(PANEL_TIER, key=len, reverse=True):
+        tier = tier.mask(unmatched & s.str.contains(name, regex=False), PANEL_TIER[name])
+    return tier
+
+
 def compute_display_score(df: pd.DataFrame) -> pd.Series:
     """
     Display score on an absolute anchor: panel quality (Dynamic AMOLED 2X is
-    Samsung's best tier, Super AMOLED is very good), high refresh rate (120Hz),
-    and screen size all contribute, so flagships with the best screens score
-    highest while budget panels still register as decent.
+    Samsung's best tier, Super AMOLED is very good, LCD is clearly a step down),
+    high refresh rate (120Hz), and screen size all contribute, so flagships with
+    the best screens score highest while budget panels still register as decent.
     """
-    panel = df["display_type"].astype(str).str.contains("2X", case=False).astype(float)
-    panel_score = 0.75 + panel * 0.25            # Super AMOLED 0.75, Dynamic AMOLED 2X 1.0
+    panel_score = _panel_tier(df["display_type"])
     refresh_score = np.clip((df["refresh_rate_hz"] - 60) / (120 - 60), 0, 1)
     size_score = np.clip((df["display_inch"] - 6.0) / (7.6 - 6.0), 0, 1)
     score = panel_score * 4.0 + refresh_score * 4.0 + size_score * 2.0

@@ -38,7 +38,7 @@
       <tr><td class="gm-spec-label">Front Camera</td><td>{{ phone_a.front_camera_mp }}MP</td><td>{{ phone_b.front_camera_mp }}MP</td></tr>
       <tr><td class="gm-spec-label">Display</td><td>{{ phone_a.display_inch }}" · {{ phone_a.refresh_rate_hz }}Hz</td><td>{{ phone_b.display_inch }}" · {{ phone_b.refresh_rate_hz }}Hz</td></tr>
       <tr><td class="gm-spec-label">Display Type</td><td>{{ phone_a.display_type }}</td><td>{{ phone_b.display_type }}</td></tr>
-      <tr><td class="gm-spec-label">Weight</td><td>{{ phone_a.weight_g }}g</td><td>{{ phone_b.weight_g }}g</td></tr>
+      <tr><td class="gm-spec-label">Weight</td><td>{{ (phone_a.weight_g ~ "g") if phone_a.weight_g else "—" }}</td><td>{{ (phone_b.weight_g ~ "g") if phone_b.weight_g else "—" }}</td></tr>
       <tr><td class="gm-spec-label">Category</td><td class="text-capitalize">{{ phone_a.category }}</td><td class="text-capitalize">{{ phone_b.category }}</td></tr>
     </tbody>
   </table>
