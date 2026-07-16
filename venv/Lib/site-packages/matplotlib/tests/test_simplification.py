@@ -1,5 +1,6 @@
 import base64
 import io
+import platform
 
 import numpy as np
 from numpy.testing import assert_array_almost_equal, assert_array_equal
@@ -17,17 +18,18 @@ from matplotlib.path import Path
 # NOTE: All of these tests assume that path.simplify is set to True
 # (the default)
 
-@image_comparison(['clipping'], remove_text=True)
+@image_comparison(['clipping'], remove_text=True, style='_classic_test')
 def test_clipping():
     t = np.arange(0.0, 2.0, 0.01)
     s = np.sin(2*np.pi*t)
 
     fig, ax = plt.subplots()
     ax.plot(t, s, linewidth=1.0)
-    ax.set_ylim((-0.20, -0.28))
+    ax.set_ylim(-0.20, -0.28)
 
 
-@image_comparison(['overflow'], remove_text=True)
+@image_comparison(['overflow'], remove_text=True, style='_classic_test',
+                  tol=0 if platform.machine() == 'x86_64' else 0.007)
 def test_overflow():
     x = np.array([1.0, 2.0, 3.0, 2.0e5])
     y = np.arange(len(x))
@@ -37,7 +39,7 @@ def test_overflow():
     ax.set_xlim(2, 6)
 
 
-@image_comparison(['clipping_diamond'], remove_text=True)
+@image_comparison(['clipping_diamond'], remove_text=True, style='_classic_test')
 def test_diamond():
     x = np.array([0.0, 1.0, 0.0, -1.0, 0.0])
     y = np.array([1.0, 0.0, -1.0, 0.0, 1.0])
@@ -231,7 +233,8 @@ def test_sine_plus_noise():
     assert simplified.vertices.size == 25240
 
 
-@image_comparison(['simplify_curve'], remove_text=True, tol=0.017)
+@image_comparison(['simplify_curve'], remove_text=True, style='_classic_test',
+                  tol=0.017)
 def test_simplify_curve():
     pp1 = patches.PathPatch(
         Path([(0, 0), (1, 0), (1, 1), (np.nan, 1), (0, 0), (2, 0), (2, 2),
@@ -242,11 +245,11 @@ def test_simplify_curve():
 
     fig, ax = plt.subplots()
     ax.add_patch(pp1)
-    ax.set_xlim((0, 2))
-    ax.set_ylim((0, 2))
+    ax.set_xlim(0, 2)
+    ax.set_ylim(0, 2)
 
 
-@check_figures_equal()
+@check_figures_equal(extensions=['png', 'pdf', 'svg'])
 def test_closed_path_nan_removal(fig_test, fig_ref):
     ax_test = fig_test.subplots(2, 2).flatten()
     ax_ref = fig_ref.subplots(2, 2).flatten()
@@ -354,7 +357,7 @@ def test_closed_path_nan_removal(fig_test, fig_ref):
     remove_ticks_and_titles(fig_ref)
 
 
-@check_figures_equal()
+@check_figures_equal(extensions=['png', 'pdf', 'svg'])
 def test_closed_path_clipping(fig_test, fig_ref):
     vertices = []
     for roll in range(8):
@@ -395,15 +398,15 @@ def test_closed_path_clipping(fig_test, fig_ref):
     fig_ref.add_artist(patches.PathPatch(path, facecolor='none'))
 
 
-@image_comparison(['hatch_simplify'], remove_text=True)
+@image_comparison(['hatch_simplify'], remove_text=True, style='_classic_test')
 def test_hatch():
     fig, ax = plt.subplots()
     ax.add_patch(plt.Rectangle((0, 0), 1, 1, fill=False, hatch="/"))
-    ax.set_xlim((0.45, 0.55))
-    ax.set_ylim((0.45, 0.55))
+    ax.set_xlim(0.45, 0.55)
+    ax.set_ylim(0.45, 0.55)
 
 
-@image_comparison(['fft_peaks'], remove_text=True)
+@image_comparison(['fft_peaks'], remove_text=True, style='_classic_test')
 def test_fft_peaks():
     fig, ax = plt.subplots()
     t = np.arange(65536)
@@ -453,7 +456,7 @@ AAj1//+nPwAA/////w=="""
     assert segs[0][1] == Path.MOVETO
 
 
-def test_throw_rendering_complexity_exceeded():
+def test_throw_rendering_complexity_exceeded(high_memory):
     plt.rcParams['path.simplify'] = False
     xx = np.arange(2_000_000)
     yy = np.random.rand(2_000_000)
@@ -465,7 +468,7 @@ def test_throw_rendering_complexity_exceeded():
         fig.savefig(io.BytesIO())
 
 
-@image_comparison(['clipper_edge'], remove_text=True)
+@image_comparison(['clipper_edge'], remove_text=True, style='_classic_test')
 def test_clipper():
     dat = (0, 1, 0, 2, 0, 3, 0, 4, 0, 5)
     fig = plt.figure(figsize=(2, 1))
@@ -481,7 +484,7 @@ def test_clipper():
     ax.set_xlim(5, 9)
 
 
-@image_comparison(['para_equal_perp'], remove_text=True)
+@image_comparison(['para_equal_perp'], remove_text=True, style='_classic_test')
 def test_para_equal_perp():
     x = np.array([0, 1, 2, 1, 0, -1, 0, 1] + [1] * 128)
     y = np.array([1, 1, 2, 1, 0, -1, 0, 0] + [0] * 128)
@@ -491,7 +494,7 @@ def test_para_equal_perp():
     ax.plot(x + 1, y + 1, 'ro')
 
 
-@image_comparison(['clipping_with_nans'])
+@image_comparison(['clipping_with_nans'], style='mpl20')
 def test_clipping_with_nans():
     x = np.linspace(0, 3.14 * 2, 3000)
     y = np.sin(x)
@@ -516,3 +519,54 @@ def test_clipping_full():
     simplified = list(p.iter_segments(clip=[0, 0, 100, 100]))
     assert ([(list(x), y) for x, y in simplified] ==
             [([50, 40], 1)])
+
+
+def test_simplify_closepoly():
+    # The values of the vertices in a CLOSEPOLY should always be ignored,
+    # in favor of the most recent MOVETO's vertex values
+    paths = [Path([(1, 1), (2, 1), (2, 2), (np.nan, np.nan)],
+                  [Path.MOVETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY]),
+             Path([(1, 1), (2, 1), (2, 2), (40, 50)],
+                  [Path.MOVETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY])]
+    expected_path = Path([(1, 1), (2, 1), (2, 2), (1, 1), (1, 1), (0, 0)],
+                         [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO,
+                          Path.LINETO, Path.STOP])
+
+    for path in paths:
+        simplified_path = path.cleaned(simplify=True)
+        assert_array_equal(expected_path.vertices, simplified_path.vertices)
+        assert_array_equal(expected_path.codes, simplified_path.codes)
+
+    # test that a compound path also works
+    path = Path([(1, 1), (2, 1), (2, 2), (np.nan, np.nan),
+                 (-1, 0), (-2, 0), (-2, 1), (np.nan, np.nan)],
+                [Path.MOVETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY,
+                 Path.MOVETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY])
+    expected_path = Path([(1, 1), (2, 1), (2, 2), (1, 1),
+                          (-1, 0), (-2, 0), (-2, 1), (-1, 0), (-1, 0), (0, 0)],
+                         [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO,
+                          Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO,
+                          Path.LINETO, Path.STOP])
+
+    simplified_path = path.cleaned(simplify=True)
+    assert_array_equal(expected_path.vertices, simplified_path.vertices)
+    assert_array_equal(expected_path.codes, simplified_path.codes)
+
+    # test for a path with an invalid MOVETO
+    # CLOSEPOLY with an invalid MOVETO should be ignored
+    path = Path([(1, 0), (1, -1), (2, -1),
+                 (np.nan, np.nan), (-1, -1), (-2, 1), (-1, 1),
+                 (2, 2), (0, -1)],
+                [Path.MOVETO, Path.LINETO, Path.LINETO,
+                 Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO,
+                 Path.CLOSEPOLY, Path.LINETO])
+    expected_path = Path([(1, 0), (1, -1), (2, -1),
+                          (np.nan, np.nan), (-1, -1), (-2, 1), (-1, 1),
+                          (0, -1), (0, -1), (0, 0)],
+                         [Path.MOVETO, Path.LINETO, Path.LINETO,
+                          Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO,
+                          Path.LINETO, Path.LINETO, Path.STOP])
+
+    simplified_path = path.cleaned(simplify=True)
+    assert_array_equal(expected_path.vertices, simplified_path.vertices)
+    assert_array_equal(expected_path.codes, simplified_path.codes)

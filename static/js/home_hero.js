@@ -16,10 +16,10 @@
 
   // Display-only flagship dataset (name / series / tagline / accent / colour).
   const PHONES = [
-    { name: "Galaxy S25 Ultra", series: "Galaxy S", tagline: "Built for creators — the ultimate camera flagship.", accent: "#2F6FED", body: "linear-gradient(150deg,#2a2f3a,#0e1118)", img: "s25ultra", isNew: true,  price: "₹1,34,999" },
-    { name: "Galaxy Z Fold6",   series: "Galaxy Z", tagline: "Unfold more — a tablet and phone in one.",           accent: "#6C5CE7", body: "linear-gradient(150deg,#20242c,#0b0d12)", img: "zfold6",   isNew: true,  price: "₹1,64,999" },
-    { name: "Galaxy Z Flip6",   series: "Galaxy Z", tagline: "Compact powerhouse that flips the script.",          accent: "#E84393", body: "linear-gradient(150deg,#2b2530,#120d14)", img: "zflip6",   isNew: true,  price: "₹1,09,999" },
-    { name: "Galaxy S24 FE",    series: "Galaxy S", tagline: "Flagship experience, everyday value.",               accent: "#00B894", body: "linear-gradient(150deg,#1f2a2a,#0a1010)", img: "s24fe",    isNew: false, price: "₹59,999" },
+    { name: "Galaxy S25 Ultra", series: "Galaxy S", tagline: "Built for creators — the ultimate camera flagship.", accent: "#2F6FED", body: "linear-gradient(150deg,#2a2f3a,#0e1118)", img: "s25_ultra", isNew: true,  price: "₹1,34,999" },
+    { name: "Galaxy Z Fold6",   series: "Galaxy Z", tagline: "Unfold more — a tablet and phone in one.",           accent: "#6C5CE7", body: "linear-gradient(150deg,#20242c,#0b0d12)", img: "z_fold6",   isNew: true,  price: "₹1,64,999" },
+    { name: "Galaxy Z Flip6",   series: "Galaxy Z", tagline: "Compact powerhouse that flips the script.",          accent: "#E84393", body: "linear-gradient(150deg,#2b2530,#120d14)", img: "z_flip6",   isNew: true,  price: "₹1,09,999" },
+    { name: "Galaxy S24 FE",    series: "Galaxy S", tagline: "Flagship experience, everyday value.",               accent: "#00B894", body: "linear-gradient(150deg,#1f2a2a,#0a1010)", img: "s24_fe",    isNew: false, price: "₹59,999" },
     { name: "Galaxy A55 5G",    series: "Galaxy A", tagline: "Power meets value in the everyday hero.",            accent: "#0984E3", body: "linear-gradient(150deg,#232a33,#0c1016)", img: "a55",      isNew: false, price: "₹39,999" },
     { name: "Galaxy M55 5G",    series: "Galaxy M", tagline: "Endurance-first, made to keep going.",               accent: "#E17055", body: "linear-gradient(150deg,#2a2320,#120c0a)", img: "m55",      isNew: false, price: "₹26,999" },
   ];
@@ -133,7 +133,7 @@
           '<div class="gm-lux-card-media">' +
             (p.isNew ? '<span class="gm-lux-new">NEW</span>' : "") +
             '<span class="gm-lux-badge ' + badgeClass(p.series) + '">' + p.series + "</span>" +
-            '<img class="gm-lux-card-img" src="' + IMG_BASE + p.img + '.png" alt="' + p.name + '" loading="lazy">' +
+            '<img class="gm-lux-card-img" src="' + IMG_BASE + p.img + '.webp" alt="' + p.name + '" loading="lazy">' +
           "</div>" +
           '<div class="gm-lux-card-body">' +
             '<h3 class="gm-lux-card-name">' + p.name + "</h3>" +

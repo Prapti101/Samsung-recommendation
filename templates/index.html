@@ -65,7 +65,8 @@
     </div>
 
     <div class="gm-entry-card">
-    <!-- Three-way input method selector -->
+    <!-- Three-way input method selector (centered) -->
+    <div class="gm-mode-toggle-wrap">
     <div class="gm-mode-toggle gm-mode-toggle--3" role="tablist" id="gm-entry-toggle">
       <button type="button" class="gm-mode-btn active" data-mode="persona" role="tab" aria-selected="true">
         <i class="bi bi-grid-fill"></i> Default Personas
@@ -77,6 +78,7 @@
         <i class="bi bi-stars"></i> Let's Take a Persona Quiz
       </button>
     </div>
+    </div>
 
     <form action="{{ url_for('recommend') }}" method="POST" id="gm-form" class="gm-entry-form">
 
@@ -85,15 +87,12 @@
           {% for p in personas %}
           <label class="gm-persona-card">
             <input type="radio" name="persona_id" value="{{ p.id }}" {% if loop.first %}checked{% endif %}>
-            <div class="gm-persona-emoji">{{ p.emoji }}</div>
-            <div class="gm-persona-name">{{ p.name }}</div>
-            <div class="gm-persona-desc">{{ p.description }}</div>
-            <div class="gm-persona-weights">
-              <span title="Camera weight">📸 {{ (p.weights.camera*100)|round|int }}%</span>
-              <span title="Performance weight">⚡ {{ (p.weights.performance*100)|round|int }}%</span>
-              <span title="Battery weight">🔋 {{ (p.weights.battery*100)|round|int }}%</span>
-              <span title="Value weight">💰 {{ (p.weights.value*100)|round|int }}%</span>
-            </div>
+            <span class="gm-persona-emoji">{{ p.emoji }}</span>
+            <span class="gm-persona-text">
+              <span class="gm-persona-name">{{ p.name }}</span>
+              <span class="gm-persona-desc">{{ p.description }}</span>
+            </span>
+            <span class="gm-persona-check" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
           </label>
           {% endfor %}
         </div>

@@ -6,6 +6,7 @@ import pytest
 
 from matplotlib import pyplot as plt
 from matplotlib.testing.decorators import image_comparison
+from matplotlib.testing.decorators import check_figures_equal
 
 
 def draw_quiver(ax, **kwargs):
@@ -25,11 +26,12 @@ def test_quiver_memory_leak():
 
     Q = draw_quiver(ax)
     ttX = Q.X
+    orig_refcount = sys.getrefcount(ttX)
     Q.remove()
 
     del Q
 
-    assert sys.getrefcount(ttX) == 2
+    assert sys.getrefcount(ttX) < orig_refcount
 
 
 @pytest.mark.skipif(platform.python_implementation() != 'CPython',
@@ -42,9 +44,9 @@ def test_quiver_key_memory_leak():
     qk = ax.quiverkey(Q, 0.5, 0.92, 2, r'$2 \frac{m}{s}$',
                       labelpos='W',
                       fontproperties={'weight': 'bold'})
-    assert sys.getrefcount(qk) == 3
+    orig_refcount = sys.getrefcount(qk)
     qk.remove()
-    assert sys.getrefcount(qk) == 2
+    assert sys.getrefcount(qk) < orig_refcount
 
 
 def test_quiver_number_of_args():
@@ -99,16 +101,16 @@ def test_zero_headlength():
     fig.canvas.draw()  # Check that no warning is emitted.
 
 
-@image_comparison(['quiver_animated_test_image.png'])
+@image_comparison(['quiver_animated_test_image.png'], style='mpl20')
 def test_quiver_animate():
     # Tests fix for #2616
     fig, ax = plt.subplots()
     Q = draw_quiver(ax, animated=True)
-    ax.quiverkey(Q, 0.5, 0.92, 2, r'$2 \frac{m}{s}$',
+    ax.quiverkey(Q, 0.5, 0.88, 2, r'$2 \frac{m}{s}$',
                  labelpos='W', fontproperties={'weight': 'bold'})
 
 
-@image_comparison(['quiver_with_key_test_image.png'])
+@image_comparison(['quiver_with_key_test_image.png'], style='mpl20')
 def test_quiver_with_key():
     fig, ax = plt.subplots()
     ax.margins(0.1)
@@ -121,7 +123,8 @@ def test_quiver_with_key():
                  fontproperties={'weight': 'bold', 'size': 'large'})
 
 
-@image_comparison(['quiver_single_test_image.png'], remove_text=True)
+@image_comparison(['quiver_single_test_image.png'], remove_text=True,
+                  style='_classic_test')
 def test_quiver_single():
     fig, ax = plt.subplots()
     ax.margins(0.1)
@@ -136,7 +139,7 @@ def test_quiver_copy():
     assert q0.V[0] == 2.0
 
 
-@image_comparison(['quiver_key_pivot.png'], remove_text=True)
+@image_comparison(['quiver_key_pivot.png'], remove_text=True, style='mpl20')
 def test_quiver_key_pivot():
     fig, ax = plt.subplots()
 
@@ -151,7 +154,7 @@ def test_quiver_key_pivot():
     ax.quiverkey(q, 0, 0.5, 1, 'W', labelpos='W')
 
 
-@image_comparison(['quiver_key_xy.png'], remove_text=True)
+@image_comparison(['quiver_key_xy.png'], remove_text=True, style='_classic_test')
 def test_quiver_key_xy():
     # With scale_units='xy', ensure quiverkey still matches its quiver.
     # Note that the quiver and quiverkey lengths depend on the axes aspect
@@ -175,7 +178,7 @@ def test_quiver_key_xy():
             ax.quiverkey(q, X=x, Y=0.8, U=1, angle=angle, label='', color='b')
 
 
-@image_comparison(['barbs_test_image.png'], remove_text=True)
+@image_comparison(['barbs_test_image.png'], remove_text=True, style='_classic_test')
 def test_barbs():
     x = np.linspace(-5, 5, 5)
     X, Y = np.meshgrid(x, x)
@@ -186,7 +189,8 @@ def test_barbs():
              cmap='viridis')
 
 
-@image_comparison(['barbs_pivot_test_image.png'], remove_text=True)
+@image_comparison(['barbs_pivot_test_image.png'], remove_text=True,
+                  style='_classic_test')
 def test_barbs_pivot():
     x = np.linspace(-5, 5, 5)
     X, Y = np.meshgrid(x, x)
@@ -197,7 +201,7 @@ def test_barbs_pivot():
     ax.scatter(X, Y, s=49, c='black')
 
 
-@image_comparison(['barbs_test_flip.png'], remove_text=True)
+@image_comparison(['barbs_test_flip.png'], remove_text=True, style='_classic_test')
 def test_barbs_flip():
     """Test barbs with an array for flip_barb."""
     x = np.linspace(-5, 5, 5)
@@ -242,7 +246,7 @@ def test_angles_and_scale():
     ax.quiver(X, Y, U, V, angles=phi, scale_units='xy')
 
 
-@image_comparison(['quiver_xy.png'], remove_text=True)
+@image_comparison(['quiver_xy.png'], remove_text=True, style='_classic_test')
 def test_quiver_xy():
     # simple arrow pointing from SW to NE
     fig, ax = plt.subplots(subplot_kw=dict(aspect='equal'))
@@ -264,7 +268,7 @@ def test_quiverkey_angles():
     qk = ax.quiverkey(q, 1, 1, 2, 'Label')
     # The arrows are only created when the key is drawn
     fig.canvas.draw()
-    assert len(qk.verts) == 1
+    assert len(qk.vector.get_paths()) == 1
 
 
 def test_quiverkey_angles_xy_aitoff():
@@ -293,7 +297,7 @@ def test_quiverkey_angles_xy_aitoff():
         qk = ax.quiverkey(q, 0, 0, 1, '1 units')
 
         fig.canvas.draw()
-        assert len(qk.verts) == 1
+        assert len(qk.vector.get_paths()) == 1
 
 
 def test_quiverkey_angles_scale_units_cartesian():
@@ -320,7 +324,7 @@ def test_quiverkey_angles_scale_units_cartesian():
         qk = ax.quiverkey(q, 0, 0, 1, '1 units')
 
         fig.canvas.draw()
-        assert len(qk.verts) == 1
+        assert len(qk.vector.get_paths()) == 1
 
 
 def test_quiver_setuvc_numbers():
@@ -333,3 +337,53 @@ def test_quiver_setuvc_numbers():
 
     q = ax.quiver(X, Y, U, V)
     q.set_UVC(0, 1)
+
+
+def draw_quiverkey_zorder_argument(fig, zorder=None):
+    """Draw Quiver and QuiverKey using zorder argument"""
+    x = np.arange(1, 6, 1)
+    y = np.arange(1, 6, 1)
+    X, Y = np.meshgrid(x, y)
+    U, V = 2, 2
+
+    ax = fig.subplots()
+    q = ax.quiver(X, Y, U, V, pivot='middle')
+    ax.set_xlim(0.5, 5.5)
+    ax.set_ylim(0.5, 5.5)
+    if zorder is None:
+        ax.quiverkey(q, 4, 4, 25, coordinates='data',
+                     label='U', color='blue')
+        ax.quiverkey(q, 5.5, 2, 20, coordinates='data',
+                     label='V', color='blue', angle=90)
+    else:
+        ax.quiverkey(q, 4, 4, 25, coordinates='data',
+                     label='U', color='blue', zorder=zorder)
+        ax.quiverkey(q, 5.5, 2, 20, coordinates='data',
+                     label='V', color='blue', angle=90, zorder=zorder)
+
+
+def draw_quiverkey_setzorder(fig, zorder=None):
+    """Draw Quiver and QuiverKey using set_zorder"""
+    x = np.arange(1, 6, 1)
+    y = np.arange(1, 6, 1)
+    X, Y = np.meshgrid(x, y)
+    U, V = 2, 2
+
+    ax = fig.subplots()
+    q = ax.quiver(X, Y, U, V, pivot='middle')
+    ax.set_xlim(0.5, 5.5)
+    ax.set_ylim(0.5, 5.5)
+    qk1 = ax.quiverkey(q, 4, 4, 25, coordinates='data',
+                       label='U', color='blue')
+    qk2 = ax.quiverkey(q, 5.5, 2, 20, coordinates='data',
+                       label='V', color='blue', angle=90)
+    if zorder is not None:
+        qk1.set_zorder(zorder)
+        qk2.set_zorder(zorder)
+
+
+@pytest.mark.parametrize('zorder', [0, 2, 5, None])
+@check_figures_equal()
+def test_quiverkey_zorder(fig_test, fig_ref, zorder):
+    draw_quiverkey_zorder_argument(fig_test, zorder=zorder)
+    draw_quiverkey_setzorder(fig_ref, zorder=zorder)

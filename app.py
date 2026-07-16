@@ -14,8 +14,11 @@ Routes:
     GET  /api/persona-match -> JSON: infer persona + budget from free text (AJAX)
 """
 
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, url_for
 import pandas as pd
+import os
+import re
+import glob
 
 from feature_engineering import load_engineered_phones
 from personas import PERSONAS, PERSONA_ORDER, list_personas, match_persona_from_text, get_persona
@@ -29,6 +32,144 @@ app = Flask(__name__)
 app.secret_key = "galaxy-match-local-dev-key"
 
 CSV_PATH = "phones.csv"
+
+# ----------------------------------------------------------------------
+# Phone image resolution
+# ----------------------------------------------------------------------
+# The phone images live in static/img as .webp files (e.g. "s25_ultra.webp").
+# The CSV has no image column, and model names ("Galaxy S25 Ultra") do not
+# literally equal the filenames ("s25_ultra"), so we resolve them robustly:
+#   1. an explicit override by phone_id or model (for edge cases with no
+#      dedicated asset), then
+#   2. a normalization of the model name that is matched, case-insensitively,
+#      against the actual files present on disk.
+# Resolution happens once at startup (filenames are scanned into a set) and the
+# result is cached, so it adds no per-request cost. If nothing matches, the
+# template simply omits the <img> (no broken placeholder).
+
+IMAGE_DIR = os.path.join(app.static_folder, "img")
+
+# Fallback images for models whose own file is missing OR corrupt. Keys may be
+# a model name (str) or a phone_id (int); values are filenames in static/img.
+# These are only used when the model's correctly-named valid image is absent, so
+# re-downloading a proper "s24_ultra.webp"/"m55.webp" will automatically win.
+IMAGE_OVERRIDES = {
+    "Galaxy S25 Edge": "s25.webp",   # no dedicated Edge render; use the S25 image
+    "Galaxy S24 Ultra": "s24.webp",  # shipped s24_ultra.webp was corrupt; same-gen fallback
+    "Galaxy M55 5G": "m56.webp",     # shipped m55.webp was corrupt; closest M-series fallback
+}
+
+
+def _is_valid_image(path: str) -> bool:
+    """
+    True only if the file is a real, decodable image. Some downloaded files
+    can be corrupt or an HTML/JS page saved with an image extension; those
+    return 200 from Flask but render as a broken icon in the browser. We detect
+    them by their magic bytes so they are never served.
+    """
+    try:
+        with open(path, "rb") as fh:
+            head = fh.read(16)
+    except OSError:
+        return False
+    # WEBP: "RIFF"...."WEBP" | PNG | JPEG | GIF
+    if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+        return True
+    if head[:8] == b"\x89PNG\r\n\x1a\n":
+        return True
+    if head[:3] == b"\xff\xd8\xff":            # JPEG
+        return True
+    if head[:6] in (b"GIF87a", b"GIF89a"):
+        return True
+    return False
+
+
+def _available_images() -> dict:
+    """Map lowercase filename (without extension) -> actual filename on disk,
+    including ONLY files that are genuinely valid images."""
+    mapping = {}
+    for path in glob.glob(os.path.join(IMAGE_DIR, "*")):
+        fname = os.path.basename(path)
+        stem, ext = os.path.splitext(fname)
+        if ext.lower() in (".webp", ".png", ".jpg", ".jpeg") and _is_valid_image(path):
+            mapping[stem.lower()] = fname
+    return mapping
+
+
+# Scanned once at import; safe because the image folder is static.
+_IMAGE_INDEX = _available_images()
+_IMAGE_CACHE = {}
+
+
+def _normalize_model(model: str) -> str:
+    """
+    Turn a model name into a filename stem candidate, e.g.:
+        "Galaxy S25 Ultra" -> "s25_ultra"
+        "Galaxy S24+"       -> "s24_plus"
+        "Galaxy Z Fold6"    -> "z_fold6"
+        "Galaxy A55 5G"     -> "a55"
+    """
+    s = str(model).lower().strip()
+    s = s.replace("galaxy", "")
+    s = s.replace("+", " plus ")
+    s = re.sub(r"\b5g\b", "", s)                # drop the "5G" suffix
+    s = re.sub(r"[^a-z0-9]+", "_", s)           # non-alphanumerics -> underscore
+    return re.sub(r"_+", "_", s).strip("_")
+
+
+def _resolve_image_filename(phone_id, model: str):
+    """Return the best-matching image filename in static/img, or None."""
+    cache_key = (phone_id, model)
+    if cache_key in _IMAGE_CACHE:
+        return _IMAGE_CACHE[cache_key]
+
+    result = None
+
+    # 1. Correctly-named valid image on disk (from the validated index).
+    base = _normalize_model(model)
+    for cand in (base, base.replace("_", ""), base.replace("plus", "_plus")):
+        if cand in _IMAGE_INDEX:
+            result = _IMAGE_INDEX[cand]
+            break
+
+    # 2. Fallback override (by phone_id, then exact model) — used only when the
+    #    model has no valid correctly-named file (missing or corrupt).
+    if result is None:
+        override = IMAGE_OVERRIDES.get(phone_id) or IMAGE_OVERRIDES.get(model)
+        if override and os.path.splitext(override)[0].lower() in _IMAGE_INDEX:
+            result = _IMAGE_INDEX[os.path.splitext(override)[0].lower()]
+
+    _IMAGE_CACHE[cache_key] = result
+    return result
+
+
+def _phone_image_url(phone_id, model: str):
+    """Return a url_for('static', ...) URL for the phone image, or None."""
+    fname = _resolve_image_filename(phone_id, model)
+    if not fname:
+        return None
+    return url_for("static", filename="img/" + fname)
+
+
+def _samsung_explore_url(model: str) -> str:
+    """
+    Build a Samsung India link for a model. We use the site search endpoint
+    (rather than guessing exact product slugs) so the link always resolves to
+    the right phone on samsung.com.
+    """
+    from urllib.parse import quote_plus
+    return "https://www.samsung.com/in/search/?searchvalue=" + quote_plus(model)
+
+
+def _phone_feature_list(p: dict) -> list:
+    """Five headline specs for a phone, used in the Smarter Upgrade card."""
+    return [
+        {"icon": "camera",   "label": "{}MP main camera".format(p["main_camera_mp"])},
+        {"icon": "cpu",      "label": p["processor"]},
+        {"icon": "battery",  "label": "{:,}mAh · {}W charging".format(p["battery_mah"], p["charging_w"])},
+        {"icon": "display",  "label": "{}\" · {}Hz display".format(p["display_inch"], p["refresh_rate_hz"])},
+        {"icon": "memory",   "label": "{}GB RAM · {}GB storage".format(p["ram_gb"], p["storage_gb"])},
+    ]
 
 
 def _phone_to_dict(row: pd.Series) -> dict:
@@ -53,6 +194,7 @@ def _phone_to_dict(row: pd.Series) -> dict:
         "display_type": row["display_type"],
         "weight_g": int(row["weight_g"]),
         "category": row["category"],
+        "image": _phone_image_url(int(row["phone_id"]), row["model"]),
         "camera_score": float(row["camera_score"]),
         "performance_score": float(row["performance_score"]),
         "battery_score": float(row["battery_score"]),
@@ -154,7 +296,7 @@ def recommend():
         persona = get_persona(persona_id)
         budget = int(budget_raw) if budget_raw else persona["default_budget"]
     else:
-        persona = PERSONAS["business_allrounder"]
+        persona = PERSONAS["business_professional"]
         budget = int(budget_raw) if budget_raw else persona["default_budget"]
 
     weights = dict(persona["weights"])
@@ -197,20 +339,18 @@ def recommend():
     # ------------------------------------------------------------------
     # "Smarter Upgrade" (presentation-only, complements the Budget Simulator).
     # Reuses the EXISTING WSM engine: rank the whole catalog (budget=None) with
-    # the same weights, then pick the best-scoring phone priced ABOVE the current
-    # #1 — i.e. what a slightly bigger budget would unlock. No new scoring logic;
-    # improvement bullets are derived from existing spec fields below.
+    # the same weights, then, for each small budget increase (+₹2k … +₹10k),
+    # surface the best-scoring phone the extra money unlocks (priced above the
+    # current #1, within the raised budget). No new scoring logic; the feature
+    # list and improvement bullets are derived from existing spec fields.
     # ------------------------------------------------------------------
     upgrade = None
     if top3_dicts:
         current = top3_dicts[0]
         full_pool = get_full_ranking(weights, budget=None, csv_path=CSV_PATH)
         pool_dicts = [_phone_to_dict(row) for _, row in full_pool.iterrows()]
-        pricier = [p for p in pool_dicts if p["price_inr"] > current["price_inr"]]
+        # pool_dicts is already ranked by match_score (best first).
 
-        # Keep it a *small* step-up: cap the jump at the larger of +₹35,000 or
-        # +80% of the current price, so a genuinely better phone can surface
-        # while still feeling like a modest increase.
         def compute_gains(cur, pick):
             g = []
             if pick["main_camera_mp"] > cur["main_camera_mp"]:
@@ -232,31 +372,37 @@ def recommend():
                 g.append("Better overall value rating")
             return g
 
-        if pricier:
-            cap = current["price_inr"] + max(35000, int(current["price_inr"] * 0.8))
-            window = [p for p in pricier if p["price_inr"] <= cap]
-            pool_for_pick = window if window else pricier
+        # Best phone unlocked at each small budget increase (+₹2k … +₹10k).
+        # "Adding ₹X" means ₹X on top of the CURRENT pick's price, and we show
+        # the best phone at that exact new price point (priced above the current
+        # pick, up to current price + ₹X).
+        tiers = []
+        for delta in (2000, 4000, 6000, 8000, 10000):
+            ceiling = current["price_inr"] + delta
+            candidates = [p for p in pool_dicts
+                          if current["price_inr"] < p["price_inr"] <= ceiling]
+            pick = candidates[0] if candidates else None   # pool order = best score
+            if pick:
+                tiers.append({
+                    "delta": delta,
+                    "new_budget": ceiling,
+                    "available": True,
+                    "pick": pick,
+                    "price_delta": pick["price_inr"] - current["price_inr"],
+                    "features": _phone_feature_list(pick),
+                    "gains": compute_gains(current, pick),
+                    "explore_url": _samsung_explore_url(pick["model"]),
+                })
+            else:
+                tiers.append({"delta": delta, "new_budget": ceiling,
+                              "available": False})
 
-            # Prefer, within the modest-upgrade window, the option that has the
-            # most tangible spec gains (then best match, then smallest jump).
-            scored = []
-            for cand in pool_for_pick:
-                g = compute_gains(current, cand)
-                scored.append((cand, g))
-            scored_with_gains = [(c, g) for (c, g) in scored if g]
-
-            if scored_with_gains:
-                upgrade_pick, gains = sorted(
-                    scored_with_gains,
-                    key=lambda cg: (-len(cg[1]), -(cg[0]["match_score"] or 0),
-                                    cg[0]["price_inr"] - current["price_inr"]),
-                )[0]
-                upgrade = {
-                    "current": current,
-                    "pick": upgrade_pick,
-                    "price_delta": upgrade_pick["price_inr"] - current["price_inr"],
-                    "gains": gains,
-                }
+        upgrade = {
+            "current": current,
+            "current_explore_url": _samsung_explore_url(current["model"]),
+            "tiers": tiers,
+            "has_any": any(t["available"] for t in tiers),
+        }
 
     return render_template(
         "results.html",

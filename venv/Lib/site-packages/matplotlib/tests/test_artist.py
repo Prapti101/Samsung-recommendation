@@ -96,7 +96,7 @@ def test_collection_transform_of_none():
     assert isinstance(c.get_offset_transform(), mtransforms.IdentityTransform)
 
 
-@image_comparison(["clip_path_clipping"], remove_text=True)
+@image_comparison(["clip_path_clipping"], remove_text=True, style='_classic_test')
 def test_clipping():
     exterior = mpath.Path.unit_rectangle().deepcopy()
     exterior.vertices *= 4
@@ -120,15 +120,15 @@ def test_clipping():
     patch.set_clip_path(clip_path, ax2.transData)
     ax2.add_patch(patch)
 
-    ax1.set_xlim([-3, 3])
-    ax1.set_ylim([-3, 3])
+    ax1.set_xlim(-3, 3)
+    ax1.set_ylim(-3, 3)
 
 
-@check_figures_equal(extensions=['png'])
+@check_figures_equal()
 def test_clipping_zoom(fig_test, fig_ref):
     # This test places the Axes and sets its limits such that the clip path is
     # outside the figure entirely. This should not break the clip path.
-    ax_test = fig_test.add_axes([0, 0, 1, 1])
+    ax_test = fig_test.add_axes((0, 0, 1, 1))
     l, = ax_test.plot([-3, 3], [-3, 3])
     # Explicit Path instead of a Rectangle uses clip path processing, instead
     # of a clip box optimization.
@@ -136,7 +136,7 @@ def test_clipping_zoom(fig_test, fig_ref):
     p = mpatches.PathPatch(p, transform=ax_test.transData)
     l.set_clip_path(p)
 
-    ax_ref = fig_ref.add_axes([0, 0, 1, 1])
+    ax_ref = fig_ref.add_axes((0, 0, 1, 1))
     ax_ref.plot([-3, 3], [-3, 3])
 
     ax_ref.set(xlim=(0.5, 0.75), ylim=(0.5, 0.75))
@@ -208,7 +208,7 @@ def test_remove():
 
     for art in [im, ln]:
         assert art.axes is None
-        assert art.figure is None
+        assert art.get_figure() is None
 
     assert im not in ax._mouseover_set
     assert fig.stale
@@ -217,17 +217,14 @@ def test_remove():
 
 @image_comparison(["default_edges.png"], remove_text=True, style='default')
 def test_default_edges():
-    # Remove this line when this test image is regenerated.
-    plt.rcParams['text.kerning_factor'] = 6
-
     fig, [[ax1, ax2], [ax3, ax4]] = plt.subplots(2, 2)
 
     ax1.plot(np.arange(10), np.arange(10), 'x',
              np.arange(10) + 1, np.arange(10), 'o')
     ax2.bar(np.arange(10), np.arange(10), align='edge')
     ax3.text(0, 0, "BOX", size=24, bbox=dict(boxstyle='sawtooth'))
-    ax3.set_xlim((-1, 1))
-    ax3.set_ylim((-1, 1))
+    ax3.set_xlim(-1, 1)
+    ax3.set_ylim(-1, 1)
     pp1 = mpatches.PathPatch(
         mpath.Path([(0, 0), (1, 0), (1, 1), (0, 0)],
                    [mpath.Path.MOVETO, mpath.Path.CURVE3,
@@ -257,6 +254,36 @@ def test_setp():
     sio = io.StringIO()
     plt.setp(lines1, 'zorder', file=sio)
     assert sio.getvalue() == '  zorder: float\n'
+
+
+def test_artist_set():
+    line = mlines.Line2D([], [])
+    line.set(linewidth=7)
+    assert line.get_linewidth() == 7
+
+    # Property aliases should work
+    line.set(lw=5)
+    assert line.get_linewidth() == 5
+
+
+def test_artist_set_invalid_property_raises():
+    """
+    Test that set() raises AttributeError for invalid property names.
+    """
+    line = mlines.Line2D([0, 1], [0, 1])
+
+    with pytest.raises(AttributeError, match="unexpected keyword argument"):
+        line.set(not_a_property=1)
+
+
+def test_artist_set_duplicate_aliases_raises():
+    """
+    Test that set() raises TypeError when both a property and its alias are provided.
+    """
+    line = mlines.Line2D([0, 1], [0, 1])
+
+    with pytest.raises(TypeError, match="aliases of one another"):
+        line.set(lw=2, linewidth=3)
 
 
 def test_None_zorder():
@@ -562,3 +589,37 @@ def test_draw_wraper_forward_input():
 
     assert 'aardvark' == art.draw(renderer, 'aardvark')
     assert 'aardvark' == art.draw(renderer, extra='aardvark')
+
+
+def test_get_figure():
+    fig = plt.figure()
+    sfig1 = fig.subfigures()
+    sfig2 = sfig1.subfigures()
+    ax = sfig2.subplots()
+
+    assert fig.get_figure(root=True) is fig
+    assert fig.get_figure(root=False) is fig
+
+    assert ax.get_figure() is sfig2
+    assert ax.get_figure(root=False) is sfig2
+    assert ax.get_figure(root=True) is fig
+
+    # SubFigure.get_figure has separate implementation but should give consistent
+    # results to other artists.
+    assert sfig2.get_figure(root=False) is sfig1
+    assert sfig2.get_figure(root=True) is fig
+    # Currently different results by default.
+    with pytest.warns(mpl.MatplotlibDeprecationWarning):
+        assert sfig2.get_figure() is fig
+    # No deprecation warning if root and parent figure are the same.
+    assert sfig1.get_figure() is fig
+
+    # An artist not yet attached to anything has no figure.
+    ln = mlines.Line2D([], [])
+    assert ln.get_figure(root=True) is None
+    assert ln.get_figure(root=False) is None
+
+    # figure attribute is root for (Sub)Figures but parent for other artists.
+    assert ax.figure is sfig2
+    assert fig.figure is fig
+    assert sfig2.figure is fig

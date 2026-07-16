@@ -18,64 +18,92 @@ import re
 # 1. Persona definitions
 # ----------------------------------------------------------------------
 PERSONAS = {
-    "camera_creator": {
-        "id": "camera_creator",
-        "name": "Camera Enthusiast / Content Creator",
-        "emoji": "📸",
-        "description": "You care most about capturing stunning photos and "
-                        "videos -- for Instagram, YouTube, or just memories "
-                        "that look professional.",
-        "weights": {"camera": 0.50, "performance": 0.20, "battery": 0.15, "value": 0.15},
-        "default_budget": 140000,
-        "keywords": ["photo", "photography", "camera", "content creator", "youtube",
-                     "instagram", "reels", "vlog", "video", "influencer", "shoot",
-                     "photographer", "creator"],
+    "student": {
+        "id": "student",
+        "name": "Student",
+        "emoji": "🎓",
+        "description": "You want the best possible phone for the money -- solid "
+                        "all-round specs and a battery that lasts through long "
+                        "days of classes, notes and entertainment, without "
+                        "overspending.",
+        "weights": {"camera": 0.15, "performance": 0.15, "battery": 0.25, "value": 0.45},
+        "default_budget": 30000,
+        "keywords": ["student", "budget", "college", "school", "cheap", "affordable",
+                     "value", "money", "tight budget", "low budget", "study", "save"],
     },
-    "gamer_poweruser": {
-        "id": "gamer_poweruser",
-        "name": "Gamer / Power User",
+    "business_professional": {
+        "id": "business_professional",
+        "name": "Business Professional",
+        "emoji": "💼",
+        "description": "You need a dependable phone for work and life -- strong "
+                        "performance for multitasking, all-day battery, and the "
+                        "reliability to handle calls, email and meetings anywhere.",
+        "weights": {"camera": 0.20, "performance": 0.30, "battery": 0.30, "value": 0.20},
+        "default_budget": 120000,
+        "keywords": ["business", "work", "professional", "office", "productivity",
+                     "meetings", "reliable", "corporate", "executive", "email",
+                     "all rounder", "all-rounder", "balanced"],
+    },
+    "traveller": {
+        "id": "traveller",
+        "name": "Traveller",
+        "emoji": "🧭",
+        "description": "You want a phone that lasts through long journeys, captures "
+                        "every moment on the go, and stays connected and reliable "
+                        "wherever the road takes you.",
+        "weights": {"camera": 0.30, "performance": 0.20, "battery": 0.35, "value": 0.15},
+        "default_budget": 80000,
+        "keywords": ["travel", "traveller", "traveler", "explorer", "journey", "trip",
+                     "outdoor", "adventure", "navigation", "maps", "roaming", "hiking"],
+    },
+    "gamer": {
+        "id": "gamer",
+        "name": "Gamer",
         "emoji": "🎮",
-        "description": "You want raw speed -- smooth gaming, multitasking, "
-                        "and a phone that never lags, with battery that "
-                        "keeps up with long sessions.",
+        "description": "You want raw speed -- smooth high-refresh gaming, effortless "
+                        "multitasking, and a phone that never lags, with a battery "
+                        "that keeps up with long sessions.",
         "weights": {"camera": 0.15, "performance": 0.50, "battery": 0.25, "value": 0.10},
         "default_budget": 110000,
         "keywords": ["gaming", "gamer", "game", "pubg", "bgmi", "fps", "multitask",
-                      "performance", "fast", "power user", "editing", "processor",
-                      "chipset", "benchmark"],
+                     "performance", "fast", "power user", "processor", "chipset",
+                     "benchmark", "120hz", "refresh"],
     },
-    "student_budget": {
-        "id": "student_budget",
-        "name": "Student / Budget Buyer",
-        "emoji": "🎓",
-        "description": "You want the best possible phone for the money -- "
-                        "solid all-round specs without overspending.",
-        "weights": {"camera": 0.15, "performance": 0.15, "battery": 0.25, "value": 0.45},
-        "default_budget": 30000,
-        "keywords": ["student", "budget", "college", "cheap", "affordable", "value",
-                      "money", "tight budget", "low budget", "inexpensive", "save"],
+    "social_influencer": {
+        "id": "social_influencer",
+        "name": "Social Media Influencer",
+        "emoji": "🤳",
+        "description": "You live for content -- stunning photos and video, a great "
+                        "front camera for selfies and vlogs, and the power to edit "
+                        "and post to your followers on the go.",
+        "weights": {"camera": 0.45, "performance": 0.25, "battery": 0.15, "value": 0.15},
+        "default_budget": 100000,
+        "keywords": ["influencer", "content creator", "instagram", "reels", "tiktok",
+                     "youtube", "vlog", "selfie", "social media", "creator", "posting",
+                     "streaming", "followers"],
     },
-    "business_allrounder": {
-        "id": "business_allrounder",
-        "name": "Business / All-Rounder",
-        "emoji": "💼",
-        "description": "You want a dependable, well-balanced flagship -- "
-                        "great all day battery, strong performance for work, "
-                        "and a camera that's always ready.",
-        "weights": {"camera": 0.20, "performance": 0.30, "battery": 0.30, "value": 0.20},
-        "default_budget": 120000,
-        "keywords": ["business", "work", "professional", "all rounder", "all-rounder",
-                     "office", "productivity", "meetings", "reliable", "everyday",
-                     "balanced", "executive", "travel"],
+    "photographer": {
+        "id": "photographer",
+        "name": "Photographer",
+        "emoji": "📷",
+        "description": "You care most about capturing stunning photos -- the best "
+                        "camera system, sharp detail and strong low-light "
+                        "performance, all in your pocket.",
+        "weights": {"camera": 0.55, "performance": 0.20, "battery": 0.15, "value": 0.10},
+        "default_budget": 140000,
+        "keywords": ["photo", "photography", "photographer", "camera", "portrait",
+                     "night mode", "zoom", "telephoto", "megapixel", "shoot", "dslr",
+                     "low light", "detail"],
     },
 }
 
-PERSONA_ORDER = ["camera_creator", "gamer_poweruser", "student_budget", "business_allrounder"]
+PERSONA_ORDER = ["student", "business_professional", "traveller", "gamer",
+                 "social_influencer", "photographer"]
 
 
 def get_persona(persona_id: str) -> dict:
     """Return a persona dict by id, defaulting to the balanced all-rounder."""
-    return PERSONAS.get(persona_id, PERSONAS["business_allrounder"])
+    return PERSONAS.get(persona_id, PERSONAS["business_professional"])
 
 
 def list_personas() -> list:
@@ -131,7 +159,7 @@ def match_persona_from_text(text: str) -> dict:
         }
     """
     text_lower = text.lower()
-    best_id, best_score = "business_allrounder", 0
+    best_id, best_score = "business_professional", 0
 
     for pid in PERSONA_ORDER:
         persona = PERSONAS[pid]

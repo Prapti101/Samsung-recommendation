@@ -10,8 +10,10 @@ import numpy as np
 
 import matplotlib as mpl
 from matplotlib.figure import Figure
+from matplotlib.patches import Circle
 from matplotlib.text import Text
 import matplotlib.pyplot as plt
+from matplotlib.testing import _gen_multi_font_text
 from matplotlib.testing.decorators import check_figures_equal, image_comparison
 from matplotlib.testing._markers import needs_usetex
 from matplotlib import font_manager as fm
@@ -37,13 +39,14 @@ def test_visibility():
     parser.Parse(buf)  # this will raise ExpatError if the svg is invalid
 
 
-@image_comparison(['fill_black_with_alpha.svg'], remove_text=True)
+@image_comparison(['fill_black_with_alpha.svg'], remove_text=True,
+                  style='_classic_test')
 def test_fill_black_with_alpha():
     fig, ax = plt.subplots()
     ax.scatter(x=[0, 0.1, 1], y=[0, 0, 0], c='k', alpha=0.1, s=10000)
 
 
-@image_comparison(['noscale'], remove_text=True)
+@image_comparison(['noscale'], remove_text=True, style='_classic_test')
 def test_noscale():
     X, Y = np.meshgrid(np.arange(-5, 5, 1), np.arange(-5, 5, 1))
     Z = np.sin(Y ** 2)
@@ -62,30 +65,32 @@ def test_text_urls():
         fig.savefig(fd, format='svg')
         buf = fd.getvalue().decode()
 
-    expected = f'<a xlink:href="{test_url}">'
+    expected = f'<a xlink:href="{test_url}" target="_blank">'
     assert expected in buf
 
 
-@image_comparison(['bold_font_output.svg'])
+@image_comparison(['bold_font_output.svg'], style='mpl20')
 def test_bold_font_output():
     fig, ax = plt.subplots()
     ax.plot(np.arange(10), np.arange(10))
     ax.set_xlabel('nonbold-xlabel')
     ax.set_ylabel('bold-ylabel', fontweight='bold')
-    ax.set_title('bold-title', fontweight='bold')
+    # set weight as integer to assert it's handled properly
+    ax.set_title('bold-title', fontweight=600)
 
 
-@image_comparison(['bold_font_output_with_none_fonttype.svg'])
+@image_comparison(['bold_font_output_with_none_fonttype.svg'], style='_classic_test')
 def test_bold_font_output_with_none_fonttype():
     plt.rcParams['svg.fonttype'] = 'none'
     fig, ax = plt.subplots()
     ax.plot(np.arange(10), np.arange(10))
     ax.set_xlabel('nonbold-xlabel')
     ax.set_ylabel('bold-ylabel', fontweight='bold')
-    ax.set_title('bold-title', fontweight='bold')
+    # set weight as integer to assert it's handled properly
+    ax.set_title('bold-title', fontweight=600)
 
 
-@check_figures_equal(tol=20)
+@check_figures_equal(extensions=['svg'], tol=20)
 def test_rasterized(fig_test, fig_ref):
     t = np.arange(0, 100) * (2.3)
     x = np.cos(t)
@@ -100,7 +105,7 @@ def test_rasterized(fig_test, fig_ref):
     ax_test.plot(x+1, y, "-", c="b", lw=10, rasterized=True)
 
 
-@check_figures_equal()
+@check_figures_equal(extensions=['svg'])
 def test_rasterized_ordering(fig_test, fig_ref):
     t = np.arange(0, 100) * (2.3)
     x = np.cos(t)
@@ -214,7 +219,7 @@ def test_unicode_won():
 
     tree = xml.etree.ElementTree.fromstring(buf)
     ns = 'http://www.w3.org/2000/svg'
-    won_id = 'SFSS3583-8e'
+    won_id = 'SFSS1728-232'
     assert len(tree.findall(f'.//{{{ns}}}path[@d][@id="{won_id}"]')) == 1
     assert f'#{won_id}' in tree.find(f'.//{{{ns}}}use').attrib.values()
 
@@ -299,6 +304,33 @@ def test_gid():
             assert gid in buf
 
 
+def test_clip_path_ids_reuse():
+    fig, circle = Figure(), Circle((0, 0), radius=10)
+    for i in range(5):
+        ax = fig.add_subplot()
+        aimg = ax.imshow([[i]])
+        aimg.set_clip_path(circle)
+
+    inner_circle = Circle((0, 0), radius=1)
+    ax = fig.add_subplot()
+    aimg = ax.imshow([[0]])
+    aimg.set_clip_path(inner_circle)
+
+    with BytesIO() as fd:
+        fig.savefig(fd, format='svg')
+        buf = fd.getvalue()
+
+    tree = xml.etree.ElementTree.fromstring(buf)
+    ns = 'http://www.w3.org/2000/svg'
+
+    clip_path_ids = set()
+    for node in tree.findall(f'.//{{{ns}}}clipPath[@id]'):
+        node_id = node.attrib['id']
+        assert node_id not in clip_path_ids  # assert ID uniqueness
+        clip_path_ids.add(node_id)
+    assert len(clip_path_ids) == 2  # only two clipPaths despite reuse in multiple axes
+
+
 def test_savefig_tight():
     # Check that the draw-disabled renderer correctly disables open/close_group
     # as well.
@@ -315,13 +347,17 @@ def test_url():
     s.set_urls(['https://example.com/foo', 'https://example.com/bar', None])
 
     # Line2D
-    p, = plt.plot([1, 3], [6, 5])
+    p, = plt.plot([2, 3, 4], [4, 5, 6])
     p.set_url('https://example.com/baz')
+
+    # Line2D markers-only
+    p, = plt.plot([3, 4, 5], [4, 5, 6], linestyle='none', marker='x')
+    p.set_url('https://example.com/quux')
 
     b = BytesIO()
     fig.savefig(b, format='svg')
     b = b.getvalue()
-    for v in [b'foo', b'bar', b'baz']:
+    for v in [b'foo', b'bar', b'baz', b'quux']:
         assert b'https://example.com/' + v in b
 
 
@@ -492,30 +528,26 @@ def test_svg_metadata():
     assert values == metadata['Keywords']
 
 
-@image_comparison(["multi_font_aspath.svg"], tol=1.8)
-def test_multi_font_type3():
-    fp = fm.FontProperties(family=["WenQuanYi Zen Hei"])
-    if Path(fm.findfont(fp)).name != "wqy-zenhei.ttc":
-        pytest.skip("Font may be missing")
-
-    plt.rc('font', family=['DejaVu Sans', 'WenQuanYi Zen Hei'], size=27)
+@image_comparison(["multi_font_aspath.svg"], style='mpl20')
+def test_multi_font_aspath():
+    fonts, test_str = _gen_multi_font_text()
+    plt.rc('font', family=fonts, size=16)
     plt.rc('svg', fonttype='path')
 
-    fig = plt.figure()
-    fig.text(0.15, 0.475, "There are 几个汉字 in between!")
+    fig = plt.figure(figsize=(8, 6))
+    fig.text(0.5, 0.5, test_str,
+             horizontalalignment='center', verticalalignment='center')
 
 
-@image_comparison(["multi_font_astext.svg"])
-def test_multi_font_type42():
-    fp = fm.FontProperties(family=["WenQuanYi Zen Hei"])
-    if Path(fm.findfont(fp)).name != "wqy-zenhei.ttc":
-        pytest.skip("Font may be missing")
-
-    fig = plt.figure()
+@image_comparison(["multi_font_astext.svg"], style='mpl20')
+def test_multi_font_astext():
+    fonts, test_str = _gen_multi_font_text()
+    plt.rc('font', family=fonts, size=16)
     plt.rc('svg', fonttype='none')
 
-    plt.rc('font', family=['DejaVu Sans', 'WenQuanYi Zen Hei'], size=27)
-    fig.text(0.15, 0.475, "There are 几个汉字 in between!")
+    fig = plt.figure(figsize=(8, 6))
+    fig.text(0.5, 0.5, test_str,
+             horizontalalignment='center', verticalalignment='center')
 
 
 @pytest.mark.parametrize('metadata,error,message', [
@@ -603,12 +635,13 @@ def test_svg_font_string(font_str, include_generic):
     text_count = 0
     for text_element in tree.findall(f".//{{{ns}}}text"):
         text_count += 1
-        font_info = dict(
+        font_style = dict(
             map(lambda x: x.strip(), _.strip().split(":"))
             for _ in dict(text_element.items())["style"].split(";")
-        )["font"]
+        )
 
-        assert font_info == f"{size}px {font_str}"
+        assert font_style["font-size"] == f"{size}px"
+        assert font_style["font-family"] == font_str
     assert text_count == len(ax.texts)
 
 
@@ -641,3 +674,34 @@ def test_annotationbbox_gid():
 
     expected = '<g id="a test for issue 20044">'
     assert expected in buf
+
+
+def test_svgid():
+    """Test that `svg.id` rcparam appears in output svg if not None."""
+
+    fig, ax = plt.subplots()
+    ax.plot([1, 2, 3], [3, 2, 1])
+    fig.canvas.draw()
+
+    # Default: svg.id = None
+    with BytesIO() as fd:
+        fig.savefig(fd, format='svg')
+        buf = fd.getvalue().decode()
+
+    tree = xml.etree.ElementTree.fromstring(buf)
+
+    assert plt.rcParams['svg.id'] is None
+    assert not tree.findall('.[@id]')
+
+    # String: svg.id = str
+    svg_id = 'a test for issue 28535'
+    plt.rc('svg', id=svg_id)
+
+    with BytesIO() as fd:
+        fig.savefig(fd, format='svg')
+        buf = fd.getvalue().decode()
+
+    tree = xml.etree.ElementTree.fromstring(buf)
+
+    assert plt.rcParams['svg.id'] == svg_id
+    assert tree.findall(f'.[@id="{svg_id}"]')
