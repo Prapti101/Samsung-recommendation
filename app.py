@@ -25,6 +25,7 @@ from personas import PERSONAS, PERSONA_ORDER, list_personas, match_persona_from_
 from recommender import get_top_recommendations, get_full_ranking, generate_budget_change_reasons
 from ai_longevity import compute_ai_longevity
 from ecosystem import get_ecosystem_recommendations
+from community import get_community_insights
 
 app = Flask(__name__)
 # Secret key enables server-side session storage (used to remember the last
@@ -346,6 +347,10 @@ def recommend():
     ecosystem = get_ecosystem_recommendations(
         top3_dicts[0] if top3_dicts else None, weights)
 
+    # "Community Insights": spec-derived snapshot + dynamic links to trusted
+    # external sources for the #1 pick. Presentation-only; see community.py.
+    community = get_community_insights(top3_dicts[0] if top3_dicts else None)
+
     # ------------------------------------------------------------------
     # "Smarter Upgrade" (presentation-only, complements the Budget Simulator).
     # Reuses the EXISTING WSM engine: rank the whole catalog (budget=None) with
@@ -426,6 +431,7 @@ def recommend():
         full_ranking=full_dicts,
         inferred_note=inferred_note,
         ecosystem=ecosystem,
+        community=community,
         upgrade=upgrade,
         all_phones_json=full_dicts,  # for the compare widget on this page
         history_payload={

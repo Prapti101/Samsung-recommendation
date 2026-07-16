@@ -2740,3 +2740,141 @@ body.gm-embedded #gm-scroll-bg{display:none;}
   -webkit-backdrop-filter:var(--gm-glass-blur);
   backdrop-filter:var(--gm-glass-blur);
 }
+
+/* =========================================================================
+   COMMUNITY INSIGHTS — spec-derived snapshot card + trusted source links.
+   Validation step between "Recommendation Insights" and "Better Together".
+   ========================================================================= */
+.gm-community{margin-top:72px;}
+
+/* ---- 1 · Snapshot card ---- */
+.gm-community-card{
+  max-width:1040px; margin:0 auto;
+  text-align:left;
+}
+.gm-community-card-head{
+  display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:12px;
+  padding-bottom:18px; margin-bottom:22px;
+  border-bottom:1px solid var(--gm-border-soft);
+}
+.gm-community-badge{
+  display:inline-flex; align-items:center; gap:8px;
+  font-size:.78rem; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+  color:var(--gm-blue-700);
+  background:var(--gm-blue-50); border:1px solid var(--gm-blue-100);
+  border-radius:100px; padding:7px 14px;
+}
+.gm-community-badge i{font-size:.9rem; color:var(--gm-blue-500);}
+.gm-community-for{
+  font-family:var(--gm-font-display); font-weight:700; font-size:.95rem;
+  color:var(--gm-text-secondary);
+}
+
+.gm-community-groups{
+  display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:28px 40px;
+}
+.gm-community-group-title{
+  display:flex; align-items:center; gap:8px;
+  font-family:var(--gm-font-display); font-size:.85rem; font-weight:700;
+  letter-spacing:.02em; text-transform:uppercase;
+  margin:0 0 14px;
+}
+.gm-community-group-title--good{color:var(--gm-green, #1BA672);}
+.gm-community-group-title--warn{color:#C2791B;}
+
+.gm-community-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:12px;}
+.gm-community-list li{
+  display:flex; align-items:flex-start; gap:10px;
+  font-size:.92rem; line-height:1.55; color:var(--gm-text);
+}
+.gm-community-list li i{font-size:.85rem; margin-top:.35em; flex-shrink:0;}
+.gm-community-group-title--good ~ .gm-community-list li i{color:var(--gm-green, #1BA672);}
+.gm-community-group-title--warn ~ .gm-community-list li i{color:#E0A33C;}
+
+.gm-community-bottom{
+  display:flex; align-items:flex-start; gap:10px;
+  margin:26px 0 0; padding:16px 18px;
+  background:var(--gm-tint); border:1px solid var(--gm-tint-100);
+  border-radius:var(--gm-radius-sm);
+  font-size:.93rem; font-weight:600; line-height:1.55; color:var(--gm-blue-900);
+}
+.gm-community-bottom i{color:var(--gm-blue-500); font-size:.85rem; margin-top:.3em; flex-shrink:0;}
+
+.gm-community-note{
+  display:flex; align-items:flex-start; gap:8px;
+  margin:16px 0 0;
+  font-size:.78rem; line-height:1.5; color:var(--gm-text-muted);
+}
+.gm-community-note i{margin-top:.2em; flex-shrink:0;}
+
+/* ---- 2 · Trusted sources ---- */
+.gm-community-sources-title{
+  font-family:var(--gm-font-display); font-weight:700; font-size:1rem;
+  color:var(--gm-text-secondary);
+  text-align:center; margin:44px 0 20px;
+}
+.gm-community-sources{
+  display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px;
+  max-width:1040px; margin:0 auto;
+}
+.gm-source-card{
+  position:relative;
+  display:flex; align-items:flex-start; gap:14px;
+  padding:20px 20px 18px;
+  background:var(--gm-card);
+  border:1.5px solid var(--gm-border);
+  border-radius:var(--gm-radius-md);
+  text-align:left; text-decoration:none;
+  transition:transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s ease, border-color .2s ease;
+}
+.gm-source-card:hover{
+  transform:translateY(-3px);
+  border-color:var(--gm-blue-500);
+  box-shadow:var(--gm-shadow-md);
+}
+.gm-source-icon{
+  display:grid; place-items:center; flex-shrink:0;
+  width:42px; height:42px; border-radius:12px;
+  background:var(--gm-blue-50); color:var(--gm-blue-600);
+  font-size:1.15rem;
+  transition:background .2s ease, color .2s ease;
+}
+.gm-source-card:hover .gm-source-icon{background:var(--gm-blue-600); color:#fff;}
+.gm-source-text{display:flex; flex-direction:column; min-width:0;}
+.gm-source-label{
+  font-family:var(--gm-font-display); font-weight:700; font-size:.97rem;
+  color:var(--gm-text); line-height:1.25;
+}
+.gm-source-blurb{
+  font-size:.82rem; line-height:1.45; color:var(--gm-text-secondary);
+  margin-top:5px;
+}
+.gm-source-meta{
+  font-size:.72rem; font-weight:600; letter-spacing:.02em;
+  color:var(--gm-text-muted); margin-top:8px;
+}
+/* Arrow is visible by default — on touch devices there is no hover, so the
+   affordance must always show. Only hover-capable pointers get the reveal. */
+.gm-source-arrow{
+  position:absolute; top:18px; right:18px;
+  font-size:.85rem; color:var(--gm-text-muted);
+  transition:opacity .2s ease, transform .2s ease, color .2s ease;
+}
+@media (hover:hover){
+  .gm-source-arrow{opacity:0; transform:translate(-2px, 2px);}
+  .gm-source-card:hover .gm-source-arrow{
+    opacity:1; transform:none; color:var(--gm-blue-600);
+  }
+}
+
+/* ---- Responsive ---- */
+@media (max-width:900px){
+  .gm-community-sources{grid-template-columns:repeat(2, minmax(0,1fr));}
+}
+@media (max-width:680px){
+  .gm-community{margin-top:52px;}
+  .gm-community-groups{grid-template-columns:1fr; gap:24px;}
+  .gm-community-sources{grid-template-columns:1fr;}
+  .gm-community-card-head{flex-direction:column; align-items:flex-start;}
+}

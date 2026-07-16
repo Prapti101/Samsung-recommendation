@@ -372,6 +372,79 @@
     </section>
     {% endif %}
 
+    {% if community %}
+    <!-- ============================================================
+         SECTION · COMMUNITY INSIGHTS — spec-derived snapshot + dynamic
+         links to trusted external sources. All data comes from
+         community.py; no per-phone links are hardcoded here.
+         ============================================================ -->
+    <section class="gm-community" data-reveal id="gm-community">
+      <div class="gm-section-head">
+        <span class="gm-eyebrow">Validate your pick</span>
+        <h2>Community Insights</h2>
+        <p class="gm-section-sub">Go beyond the recommendation. Explore expert reviews, benchmarks, and real-world discussions before making your decision.</p>
+      </div>
+
+      <!-- 1 · Snapshot card -->
+      <div class="gm-card gm-community-card">
+        <div class="gm-community-card-head">
+          <span class="gm-community-badge"><i class="bi bi-stars"></i> AI Community Snapshot</span>
+          <span class="gm-community-for">{{ community.full_name }}</span>
+        </div>
+
+        <div class="gm-community-groups">
+          <div class="gm-community-group">
+            <h3 class="gm-community-group-title gm-community-group-title--good">
+              <i class="bi bi-hand-thumbs-up"></i> Commonly praised
+            </h3>
+            <ul class="gm-community-list">
+              {% for point in community.snapshot.strengths %}
+              <li><i class="bi bi-check-circle-fill"></i><span>{{ point }}</span></li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <div class="gm-community-group">
+            <h3 class="gm-community-group-title gm-community-group-title--warn">
+              <i class="bi bi-exclamation-circle"></i> Trade-offs to weigh
+            </h3>
+            <ul class="gm-community-list">
+              {% for point in community.snapshot.tradeoffs %}
+              <li><i class="bi bi-dash-circle-fill"></i><span>{{ point }}</span></li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+        <p class="gm-community-bottom">
+          <i class="bi bi-flag-fill"></i> {{ community.snapshot.bottom_line }}
+        </p>
+
+        <p class="gm-community-note">
+          <i class="bi bi-info-circle"></i>
+          Generated from this phone's measured specs and scores — not a summary of real user posts.
+          Use the sources below for actual community opinion.
+        </p>
+      </div>
+
+      <!-- 2 · Trusted sources -->
+      <h3 class="gm-community-sources-title">Trusted sources</h3>
+      <div class="gm-community-sources">
+        {% for source in community.sources %}
+        <a class="gm-source-card" href="{{ source.url }}" target="_blank" rel="noopener noreferrer">
+          <span class="gm-source-icon"><i class="bi {{ source.icon }}"></i></span>
+          <span class="gm-source-text">
+            <span class="gm-source-label">{{ source.label }}</span>
+            <span class="gm-source-blurb">{{ source.blurb }}</span>
+            <span class="gm-source-meta">{{ source.meta }}</span>
+          </span>
+          <i class="bi bi-arrow-up-right gm-source-arrow"></i>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
     <!-- ============================================================
          SECTION · BETTER TOGETHER (Galaxy ecosystem accessories)
          ============================================================ -->
