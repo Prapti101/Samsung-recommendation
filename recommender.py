@@ -138,6 +138,54 @@ def get_full_ranking(persona_weights: dict, budget: int = None,
     return ranked
 
 
+def generate_budget_change_reasons(previous: dict, new: dict) -> list:
+    """
+    USP: Budget Simulator support.
+
+    Given the previously recommended phone and the newly recommended phone
+    (both plain dicts containing the existing camera_score, performance_score,
+    battery_score, value_score, match_score and price_inr fields produced by
+    the WSM pipeline above), build a list of short, dynamic explanations for
+    why the recommendation changed after the budget was adjusted.
+
+    Uses only existing score/spec fields already computed by the recommender
+    -- no hardcoded phone names, prices or canned reason text.
+    """
+    if not previous or not new:
+        return []
+
+    dims = [
+        ("camera_score", "📸 Camera"),
+        ("performance_score", "⚡ Performance"),
+        ("battery_score", "🔋 Battery"),
+        ("value_score", "💰 Value"),
+    ]
+
+    reasons = []
+    for score_key, label in dims:
+        prev_val = previous.get(score_key)
+        new_val = new.get(score_key)
+        if prev_val is None or new_val is None:
+            continue
+        diff = round(new_val - prev_val, 1)
+        if diff >= 0.3:
+            reasons.append(f"{label} improved ({prev_val:.1f} → {new_val:.1f})")
+        elif diff <= -0.3:
+            reasons.append(f"{label} is lower ({prev_val:.1f} → {new_val:.1f})")
+
+    prev_price = previous.get("price_inr")
+    new_price = new.get("price_inr")
+    if prev_price is not None and new_price is not None and prev_price != new_price:
+        price_diff = new_price - prev_price
+        direction = "more expensive" if price_diff > 0 else "cheaper"
+        reasons.append(f"💸 ₹{abs(price_diff):,} {direction} than your previous match")
+
+    if not reasons:
+        reasons.append("Overall match score is higher for your adjusted budget.")
+
+    return reasons
+
+
 if __name__ == "__main__":
     from personas import PERSONAS
 

@@ -35,7 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
           <p>Tap the heart on any recommendation card to save it here.</p>
           <a href="${window.location.origin}/" class="btn gm-btn-primary">Find recommendations</a>
         </div>`;
-      if (window.GalaxyMatchI18n) window.GalaxyMatchI18n.translatePage(content);
       return;
     }
 
@@ -44,7 +43,6 @@ document.addEventListener("DOMContentLoaded", () => {
         ${savedPhones.map((phone) => storage.phoneCardHtml(phone, { showRemove: true })).join("")}
       </div>`;
     storage.syncWishlistButtons(content);
-    if (window.GalaxyMatchI18n) window.GalaxyMatchI18n.translatePage(content);
   }
 
   content.addEventListener("click", (event) => {

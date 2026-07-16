@@ -52,7 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
           <h3>Choose two phones to compare</h3>
           <p>Pick any two Galaxy models above and we'll break down every spec and score.</p>
         </div>`;
-      if (window.GalaxyMatchI18n) window.GalaxyMatchI18n.translatePage(resultWrap);
       return;
     }
 
@@ -83,7 +82,6 @@ document.addEventListener("DOMContentLoaded", () => {
         </table>
       </div>`;
 
-    if (window.GalaxyMatchI18n) window.GalaxyMatchI18n.translatePage(resultWrap);
   }
 
   function handleChange() {

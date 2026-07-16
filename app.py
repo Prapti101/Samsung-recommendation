@@ -1,4 +1,3 @@
-
 """
 app.py
 ------
@@ -15,101 +14,21 @@ Routes:
     GET  /api/persona-match -> JSON: infer persona + budget from free text (AJAX)
 """
 
-import json
-import os
-import urllib.error
-import urllib.request
-from dotenv import load_dotenv
-
-load_dotenv()
-
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 import pandas as pd
 
 from feature_engineering import load_engineered_phones
 from personas import PERSONAS, PERSONA_ORDER, list_personas, match_persona_from_text, get_persona
-from recommender import get_top_recommendations, get_full_ranking
+from recommender import get_top_recommendations, get_full_ranking, generate_budget_change_reasons
+from ai_longevity import compute_ai_longevity
+from ecosystem import get_ecosystem_recommendations
 
 app = Flask(__name__)
+# Secret key enables server-side session storage (used to remember the last
+# recommendation inputs so the "Recommend" tab can redisplay results on GET).
+app.secret_key = "galaxy-match-local-dev-key"
 
 CSV_PATH = "phones.csv"
-
-# ----------------------------------------------------------------------
-# AI-powered multilingual support (Gemini API)
-# ----------------------------------------------------------------------
-# The Gemini API key is read from an environment variable / config only --
-# it must never be hardcoded. Set GEMINI_API_KEY in your environment
-# (see .env.example) before running the app.
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-GEMINI_API_URL = (
-    f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
-)
-
-# Supported UI languages (code -> display name used in the Gemini prompt).
-SUPPORTED_LANGUAGES = {
-    "hi": "Hindi",
-    "bn": "Bengali",
-    "ta": "Tamil",
-    "te": "Telugu",
-    "mr": "Marathi",
-    "gu": "Gujarati",
-    "kn": "Kannada",
-    "ml": "Malayalam",
-    "pa": "Punjabi",
-    "or": "Odia",
-    "ur": "Urdu",
-}
-
-
-def _translate_with_gemini(texts, target_lang_name):
-    """
-    Call the Gemini API to translate a list of UI strings into the target
-    language. Returns a list of translated strings (same length/order as
-    `texts`) on success, or None if Gemini is unavailable / the call fails
-    for any reason -- callers should fall back to English in that case.
-    """
-    if not GEMINI_API_KEY or not texts:
-        return None
-
-    prompt = (
-        "You are translating user-interface text for a phone recommendation "
-        f"web app into {target_lang_name}. Translate every string in the "
-        "JSON array below into natural, concise UI-appropriate "
-        f"{target_lang_name}. Keep numbers, currency symbols, units, and "
-        "brand/model names unchanged unless there is a natural, widely "
-        "understood localized form. Respond with ONLY a JSON array of "
-        "translated strings, the same length and in the same order as the "
-        "input array -- no extra keys, no commentary.\n\n"
-        + json.dumps(texts, ensure_ascii=False)
-    )
-
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "responseMimeType": "application/json",
-            "temperature": 0.2,
-        },
-    }
-
-    req = urllib.request.Request(
-        f"{GEMINI_API_URL}?key={GEMINI_API_KEY}",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            body = json.loads(resp.read().decode("utf-8"))
-        text = body["candidates"][0]["content"]["parts"][0]["text"]
-        translations = json.loads(text)
-        if isinstance(translations, list) and len(translations) == len(texts):
-            return [str(t) for t in translations]
-        return None
-    except (urllib.error.URLError, TimeoutError, KeyError, IndexError,
-            ValueError, json.JSONDecodeError):
-        return None
 
 
 def _phone_to_dict(row: pd.Series) -> dict:
@@ -138,6 +57,9 @@ def _phone_to_dict(row: pd.Series) -> dict:
         "performance_score": float(row["performance_score"]),
         "battery_score": float(row["battery_score"]),
         "value_score": float(row["value_score"]),
+        # AI & Longevity is a visual-only, radar-chart dimension computed by a
+        # separate scorer (ai_longevity.py). It does NOT affect the WSM ranking.
+        "ai_longevity_score": compute_ai_longevity(row),
         "match_score": float(row["match_score"]) if "match_score" in row else None,
         "rank": int(row["rank"]) if "rank" in row else None,
         "reason": row["reason"] if "reason" in row else None,
@@ -158,21 +80,69 @@ def home():
     )
 
 
-@app.route("/recommend", methods=["POST"])
+@app.route("/quiz")
+def quiz():
+    """Smart Discovery Quiz: a conversational, scenario-based path to a
+    recommendation. The quiz itself is client-side; on completion it POSTs
+    weights + budget to the existing /recommend route (source=quiz)."""
+    return render_template("quiz.html")
+
+
+@app.route("/recommend", methods=["GET", "POST"])
 def recommend():
     """
     Handle the recommendation form submission. Supports two input modes:
       1. Persona dropdown selection (persona_id present in form)
       2. Free-text description (user_text present, non-empty)
     Optional manual priority sliders can override/blend persona weights.
+
+    Works as a navigable "Recommend" tab too: on POST the submitted inputs are
+    saved to the session; a GET replays the last inputs (re-running the same
+    engine) so the tab keeps showing the latest recommendation. A GET with no
+    prior recommendation shows a centered empty state.
     """
-    persona_id = request.form.get("persona_id", "").strip()
-    user_text = request.form.get("user_text", "").strip()
-    budget_raw = request.form.get("budget", "").strip()
+    if request.method == "POST":
+        form = request.form
+        # Remember the raw inputs so the "Recommend" tab can redisplay results.
+        session["last_reco"] = {
+            "persona_id": form.get("persona_id", ""),
+            "user_text": form.get("user_text", ""),
+            "budget": form.get("budget", ""),
+            "source": form.get("source", ""),
+            "w_camera": form.get("w_camera", ""),
+            "w_performance": form.get("w_performance", ""),
+            "w_battery": form.get("w_battery", ""),
+            "w_value": form.get("w_value", ""),
+        }
+    else:
+        form = session.get("last_reco")
+        if not form:
+            # No recommendation yet — show a friendly, centered empty state.
+            return render_template("results.html", empty_recommend=True)
+
+    persona_id = form.get("persona_id", "").strip()
+    user_text = form.get("user_text", "").strip()
+    budget_raw = form.get("budget", "").strip()
+    source = form.get("source", "").strip()
 
     inferred_note = None
 
-    if user_text:
+    if source == "quiz":
+        # Smart Discovery Quiz mode: the quiz already translated the user's
+        # answers into custom weights + a budget (handled by the shared
+        # custom-weight block below). We use a friendly, quiz-branded label
+        # instead of a persona, and let the weights speak for themselves.
+        persona = {
+            "id": "quiz",
+            "name": "Your Quiz Match",
+            "emoji": "\u2728",
+            "default_budget": 60000,
+            "weights": {"camera": 0.25, "performance": 0.25, "battery": 0.25, "value": 0.25},
+        }
+        budget = int(budget_raw) if budget_raw else persona["default_budget"]
+        inferred_note = ("Built from your quiz answers \u2014 your priorities were "
+                         "translated into the weighting below.")
+    elif user_text:
         # Free-text mode: infer persona + budget from description
         match = match_persona_from_text(user_text)
         persona = match["persona"]
@@ -193,8 +163,8 @@ def recommend():
     # sent from the "Fine-tune priorities" panel on the home page. If present
     # and they sum to > 0, they override the persona's default weights.
     custom_weight_keys = ["w_camera", "w_performance", "w_battery", "w_value"]
-    if all(request.form.get(k) not in (None, "") for k in custom_weight_keys):
-        raw_vals = {k: float(request.form.get(k, 0)) for k in custom_weight_keys}
+    if all(form.get(k) not in (None, "") for k in custom_weight_keys):
+        raw_vals = {k: float(form.get(k, 0)) for k in custom_weight_keys}
         total = sum(raw_vals.values())
         if total > 0:
             weights = {
@@ -212,14 +182,95 @@ def recommend():
 
     weight_pct = {k: round(v * 100) for k, v in weights.items()}
 
+    # Bounds for the Budget Simulator slider (USP), derived from the whole
+    # catalog so the user can explore both cheaper and pricier options.
+    catalog_df = load_engineered_phones(CSV_PATH)
+    sim_min_budget = int(catalog_df["price_inr"].min())
+    sim_max_budget = int(catalog_df["price_inr"].max())
+
+    # "Complete Your Galaxy Experience": modular ecosystem suggestions derived
+    # from the already-computed top pick + run weights. No extra recommendation
+    # computation; reuses existing data only.
+    ecosystem = get_ecosystem_recommendations(
+        top3_dicts[0] if top3_dicts else None, weights)
+
+    # ------------------------------------------------------------------
+    # "Smarter Upgrade" (presentation-only, complements the Budget Simulator).
+    # Reuses the EXISTING WSM engine: rank the whole catalog (budget=None) with
+    # the same weights, then pick the best-scoring phone priced ABOVE the current
+    # #1 — i.e. what a slightly bigger budget would unlock. No new scoring logic;
+    # improvement bullets are derived from existing spec fields below.
+    # ------------------------------------------------------------------
+    upgrade = None
+    if top3_dicts:
+        current = top3_dicts[0]
+        full_pool = get_full_ranking(weights, budget=None, csv_path=CSV_PATH)
+        pool_dicts = [_phone_to_dict(row) for _, row in full_pool.iterrows()]
+        pricier = [p for p in pool_dicts if p["price_inr"] > current["price_inr"]]
+
+        # Keep it a *small* step-up: cap the jump at the larger of +₹35,000 or
+        # +80% of the current price, so a genuinely better phone can surface
+        # while still feeling like a modest increase.
+        def compute_gains(cur, pick):
+            g = []
+            if pick["main_camera_mp"] > cur["main_camera_mp"]:
+                g.append("Better camera — {}MP vs {}MP main sensor".format(
+                    pick["main_camera_mp"], cur["main_camera_mp"]))
+            if pick["performance_score"] > cur["performance_score"]:
+                g.append("Faster processor — {}".format(pick["processor"]))
+            if pick["battery_mah"] > cur["battery_mah"]:
+                g.append("Longer battery life — {:,}mAh vs {:,}mAh".format(
+                    pick["battery_mah"], cur["battery_mah"]))
+            if pick["display_inch"] > cur["display_inch"] or \
+               pick["refresh_rate_hz"] > cur["refresh_rate_hz"]:
+                g.append("Better display — {}\" · {}Hz".format(
+                    pick["display_inch"], pick["refresh_rate_hz"]))
+            if pick["charging_w"] > cur["charging_w"]:
+                g.append("Faster charging — {}W vs {}W".format(
+                    pick["charging_w"], cur["charging_w"]))
+            if pick["value_score"] > cur["value_score"]:
+                g.append("Better overall value rating")
+            return g
+
+        if pricier:
+            cap = current["price_inr"] + max(35000, int(current["price_inr"] * 0.8))
+            window = [p for p in pricier if p["price_inr"] <= cap]
+            pool_for_pick = window if window else pricier
+
+            # Prefer, within the modest-upgrade window, the option that has the
+            # most tangible spec gains (then best match, then smallest jump).
+            scored = []
+            for cand in pool_for_pick:
+                g = compute_gains(current, cand)
+                scored.append((cand, g))
+            scored_with_gains = [(c, g) for (c, g) in scored if g]
+
+            if scored_with_gains:
+                upgrade_pick, gains = sorted(
+                    scored_with_gains,
+                    key=lambda cg: (-len(cg[1]), -(cg[0]["match_score"] or 0),
+                                    cg[0]["price_inr"] - current["price_inr"]),
+                )[0]
+                upgrade = {
+                    "current": current,
+                    "pick": upgrade_pick,
+                    "price_delta": upgrade_pick["price_inr"] - current["price_inr"],
+                    "gains": gains,
+                }
+
     return render_template(
         "results.html",
         persona=persona,
         budget=budget,
         weights=weight_pct,
+        weights_raw=weights,
+        sim_min_budget=sim_min_budget,
+        sim_max_budget=sim_max_budget,
         top3=top3_dicts,
         full_ranking=full_dicts,
         inferred_note=inferred_note,
+        ecosystem=ecosystem,
+        upgrade=upgrade,
         all_phones_json=full_dicts,  # for the compare widget on this page
         history_payload={
             "source_type": "description" if user_text else "persona",
@@ -290,31 +341,69 @@ def api_persona_match():
     })
 
 
-@app.route("/api/translate", methods=["POST"])
-def api_translate():
+@app.route("/api/simulate-budget", methods=["POST"])
+def api_simulate_budget():
     """
-    AJAX endpoint used by the language switcher: translates a batch of
-    UI strings into `target_lang` using the Gemini API. Translations are
-    generated dynamically -- no hardcoded translation dictionaries are
-    used or stored server-side. If Gemini is unavailable/misconfigured,
-    responds with translations: None so the client falls back to English.
+    USP: Budget Simulator (AJAX endpoint).
+
+    Re-runs the existing WSM recommender (get_top_recommendations) with the
+    same persona/weights already used on the results page, but with an
+    updated budget supplied by the slider. Returns the new top pick plus a
+    dynamic explanation of what changed relative to the previous pick, built
+    only from existing scores/specs -- no separate scoring logic and no
+    hardcoded phone data.
     """
     data = request.get_json(silent=True) or {}
-    texts = data.get("texts")
-    target_lang = (data.get("target_lang") or "").strip()
+    weights = data.get("weights") or {}
+    budget_raw = data.get("budget")
+    previous = data.get("previous") or None
 
-    if not texts or not isinstance(texts, list):
-        return jsonify({"translations": []})
+    required_keys = ["camera", "performance", "battery", "value"]
+    if not all(k in weights for k in required_keys):
+        return jsonify({"error": "invalid_weights"}), 400
 
-    lang_name = SUPPORTED_LANGUAGES.get(target_lang)
-    if not lang_name:
-        return jsonify({"translations": None, "error": "unsupported_language"}), 400
+    try:
+        budget = int(budget_raw)
+    except (TypeError, ValueError):
+        return jsonify({"error": "invalid_budget"}), 400
 
-    translations = _translate_with_gemini(texts, lang_name)
-    if translations is None:
-        return jsonify({"translations": None, "error": "translation_unavailable"}), 503
+    # Reuse the exact same recommendation algorithm/backend as the results
+    # page -- same persona weights, same WSM pipeline, same reason builder --
+    # just with the updated budget. Ask for a fresh Top 3 (no logic rewritten
+    # here, no hardcoded phones/prices/reasons).
+    top3 = get_top_recommendations(weights, budget, csv_path=CSV_PATH, top_n=3)
+    if top3.empty:
+        return jsonify({
+            "top3": [],
+            "phone": None,
+            "budget": budget,
+            "changed": True,
+            "reasons": [],
+        })
 
-    return jsonify({"translations": translations})
+    top3_dicts = [_phone_to_dict(row) for _, row in top3.iterrows()]
+    new_dict = top3_dicts[0]
+
+    same_phone = bool(previous) and previous.get("phone_id") == new_dict["phone_id"]
+    reasons = [] if same_phone else generate_budget_change_reasons(previous, new_dict)
+
+    price_diff = (new_dict["price_inr"] - previous["price_inr"]
+                  if previous and previous.get("price_inr") is not None else None)
+    match_diff = (round(new_dict["match_score"] - previous["match_score"], 1)
+                  if previous and previous.get("match_score") is not None else None)
+
+    return jsonify({
+        "top3": top3_dicts,
+        "phone": new_dict,                 # new #1 (kept for backward compatibility)
+        "previous_top1": previous,         # previous #1 recommendation, if any
+        "new_top1": new_dict,              # new #1 recommendation
+        "budget": budget,
+        "changed": not same_phone,
+        "reasons": reasons,
+        "price_diff": price_diff,
+        "match_diff": match_diff,
+    })
+
 
 
 if __name__ == "__main__":

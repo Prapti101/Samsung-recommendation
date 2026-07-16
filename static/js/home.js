@@ -2,24 +2,40 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* ---------- Mode toggle: persona vs free text ---------- */
+  /* ---------- Mode toggle: persona / text / quiz ---------- */
   const modeButtons = document.querySelectorAll(".gm-mode-btn");
   const panels = {
     persona: document.getElementById("panel-persona"),
     text: document.getElementById("panel-text"),
+    quiz: document.getElementById("panel-quiz"),
   };
+  const tuneBlock = document.getElementById("gm-entry-tune");
+  const submitRow = document.getElementById("gm-entry-submit");
 
   modeButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      modeButtons.forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      const mode = btn.dataset.mode;
-      Object.entries(panels).forEach(([key, panel]) => {
-        panel.classList.toggle("gm-hidden", key !== mode);
+      modeButtons.forEach((b) => {
+        b.classList.remove("active");
+        b.setAttribute("aria-selected", "false");
       });
-      // When switching to text mode, clear persona selection requirement (and vice versa)
+      btn.classList.add("active");
+      btn.setAttribute("aria-selected", "true");
+      const mode = btn.dataset.mode;
+
+      Object.entries(panels).forEach(([key, panel]) => {
+        if (panel) panel.classList.toggle("gm-hidden", key !== mode);
+      });
+
+      // The quiz is fully self-contained (it has its own budget + submit),
+      // so hide the shared budget/priorities tuning and the main submit button
+      // when quiz mode is active; show them for persona/text.
+      const isQuiz = mode === "quiz";
+      if (tuneBlock) tuneBlock.classList.toggle("gm-hidden", isQuiz);
+      if (submitRow) submitRow.classList.toggle("gm-hidden", isQuiz);
+
       if (mode === "text") {
-        document.getElementById("user_text").focus();
+        const ut = document.getElementById("user_text");
+        if (ut) ut.focus();
       }
     });
   });
@@ -76,7 +92,6 @@ document.addEventListener("DOMContentLoaded", () => {
               msg += ` &middot; Budget: <strong>${gmFormatINR(data.budget)}</strong>`;
             }
             hintBox.innerHTML = msg;
-            if (window.GalaxyMatchI18n) window.GalaxyMatchI18n.translatePage(hintBox);
           })
           .catch(() => {});
       }, 400);

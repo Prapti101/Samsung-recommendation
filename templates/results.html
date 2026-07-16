@@ -3,6 +3,20 @@
 
 {% block content %}
 
+{% if empty_recommend %}
+<!-- Recommend tab with no recommendation yet — centered empty state -->
+<section class="gm-section gm-recommend-empty">
+  <div class="gm-container">
+    <div class="gm-empty-reco">
+      <div class="gm-empty-reco-icon"><i class="bi bi-magic"></i></div>
+      <h1 class="gm-empty-reco-title">No recommendation yet</h1>
+      <p class="gm-empty-reco-sub">Tell us how you use your phone and we'll match you with the Galaxy that fits best. Your results will appear right here.</p>
+      <a href="{{ url_for('home') }}#build" class="btn gm-btn-primary gm-btn-lg">Start your match <i class="bi bi-arrow-right"></i></a>
+    </div>
+  </div>
+</section>
+{% else %}
+
 <section class="gm-results-hero">
   <div class="gm-container">
     <a href="{{ url_for('home') }}" class="gm-back-link"><i class="bi bi-arrow-left"></i> Start over</a>
@@ -30,64 +44,298 @@
       </div>
     {% else %}
 
-    <div class="gm-top3-grid">
+    <div class="gm-results-matches">
       {% for phone in top3 %}
-      <article class="gm-rank-card gm-rank-card--{{ phone.rank }}">
-        <button class="gm-wishlist-toggle" type="button" data-phone-id="{{ phone.phone_id }}" aria-label="Toggle wishlist">
+      {% if loop.first %}
+      <!-- ===== SECTION 1 · YOUR PERFECT MATCH (hero) ===== -->
+      <article class="gm-match-hero" data-reveal>
+        <button class="gm-wishlist-toggle gm-match-wish" type="button" data-phone-id="{{ phone.phone_id }}" aria-label="Toggle wishlist">
           <i class="bi bi-heart"></i>
         </button>
-        <div class="gm-rank-badge">#{{ phone.rank }}{% if phone.rank == 1 %} <span>Best Match</span>{% endif %}</div>
 
-        <div class="gm-rank-score">
-          <svg viewBox="0 0 120 120" class="gm-ring-svg gm-ring-svg--result">
-            <circle cx="60" cy="60" r="52" class="gm-ring-track"/>
-            <circle cx="60" cy="60" r="52" class="gm-ring-fill" style="--pct: {{ phone.match_score }}"/>
-          </svg>
-          <div class="gm-ring-label"><span>{{ phone.match_score|round|int }}</span><small>MATCH</small></div>
+        <!-- LEFT: floating phone -->
+        <div class="gm-match-stage" aria-hidden="true">
+          <div class="gm-match-glow"></div>
+          <div class="gm-match-phone gm-lux-cat-{{ phone.category }}">
+            <div class="gm-match-phone-screen">
+              <span class="gm-match-phone-cam"></span>
+              <span class="gm-match-phone-brand">SAMSUNG</span>
+            </div>
+          </div>
+          <div class="gm-match-shadow"></div>
         </div>
 
-        <h3 class="gm-rank-model">{{ phone.model }}</h3>
-        <div class="gm-rank-price">₹{{ '{:,}'.format(phone.price_inr) }}</div>
+        <!-- RIGHT: details -->
+        <div class="gm-match-info">
+          <span class="gm-match-badge"><i class="bi bi-award-fill"></i> Best Match</span>
+          <h2 class="gm-match-name">{{ phone.model }}</h2>
+          <div class="gm-match-priceline">
+            <span class="gm-match-price">₹{{ '{:,}'.format(phone.price_inr) }}</span>
+            <span class="gm-match-price-note">starting price</span>
+          </div>
 
-        <div class="gm-rank-reason">{{ phone.reason }}</div>
+          <!-- Match score: large ring + overall % -->
+          <div class="gm-match-scoreblock">
+            <div class="gm-rank-score gm-match-ring">
+              <svg viewBox="0 0 120 120" class="gm-ring-svg gm-ring-svg--result">
+                <circle cx="60" cy="60" r="52" class="gm-ring-track"/>
+                <circle cx="60" cy="60" r="52" class="gm-ring-fill" style="--pct: {{ phone.match_score }}"/>
+              </svg>
+              <div class="gm-ring-label"><span>{{ phone.match_score|round|int }}</span><small>MATCH</small></div>
+            </div>
+            <div class="gm-match-scoremeta">
+              <span class="gm-match-scorepct">{{ phone.match_score|round|int }}%</span>
+              <span class="gm-match-scorelabel">overall match with your preferences</span>
+            </div>
+          </div>
 
-        <div class="gm-score-bars">
-          <div class="gm-score-bar-row">
-            <span>📸 Camera</span>
-            <div class="gm-score-track"><div class="gm-score-fill" style="width:{{ (phone.camera_score*10)|round|int }}%"></div></div>
-            <span class="gm-score-num">{{ phone.camera_score }}</span>
+          <!-- Specifications, two columns -->
+          <div class="gm-match-specs">
+            <div class="gm-spec-item"><span class="gm-spec-k">RAM</span><span class="gm-spec-v">{{ phone.ram_gb }} GB</span></div>
+            <div class="gm-spec-item"><span class="gm-spec-k">Storage</span><span class="gm-spec-v">{{ phone.storage_gb }} GB</span></div>
+            <div class="gm-spec-item"><span class="gm-spec-k">Processor</span><span class="gm-spec-v">{{ phone.processor }}</span></div>
+            <div class="gm-spec-item"><span class="gm-spec-k">Display</span><span class="gm-spec-v">{{ phone.display_inch }}"</span></div>
+            <div class="gm-spec-item"><span class="gm-spec-k">Battery</span><span class="gm-spec-v">{{ phone.battery_mah }} mAh</span></div>
+            <div class="gm-spec-item"><span class="gm-spec-k">Charging</span><span class="gm-spec-v">{{ phone.charging_w }} W</span></div>
+            <div class="gm-spec-item"><span class="gm-spec-k">Camera</span><span class="gm-spec-v">{{ phone.main_camera_mp }} MP</span></div>
+            <div class="gm-spec-item"><span class="gm-spec-k">Refresh rate</span><span class="gm-spec-v">{{ phone.refresh_rate_hz }} Hz</span></div>
           </div>
-          <div class="gm-score-bar-row">
-            <span>⚡ Performance</span>
-            <div class="gm-score-track"><div class="gm-score-fill" style="width:{{ (phone.performance_score*10)|round|int }}%"></div></div>
-            <span class="gm-score-num">{{ phone.performance_score }}</span>
+
+          <!-- Recommendation breakdown: animated bars -->
+          <div class="gm-match-breakdown">
+            <span class="gm-match-breakdown-title">Recommendation breakdown</span>
+            <div class="gm-score-bars gm-match-bars">
+              <div class="gm-score-bar-row">
+                <span>📸 Camera</span>
+                <div class="gm-score-track"><div class="gm-score-fill gm-bar-animate" style="--target:{{ (phone.camera_score*10)|round|int }}%"></div></div>
+                <span class="gm-score-num">{{ phone.camera_score }}</span>
+              </div>
+              <div class="gm-score-bar-row">
+                <span>⚡ Performance</span>
+                <div class="gm-score-track"><div class="gm-score-fill gm-bar-animate" style="--target:{{ (phone.performance_score*10)|round|int }}%"></div></div>
+                <span class="gm-score-num">{{ phone.performance_score }}</span>
+              </div>
+              <div class="gm-score-bar-row">
+                <span>🔋 Battery</span>
+                <div class="gm-score-track"><div class="gm-score-fill gm-bar-animate" style="--target:{{ (phone.battery_score*10)|round|int }}%"></div></div>
+                <span class="gm-score-num">{{ phone.battery_score }}</span>
+              </div>
+              <div class="gm-score-bar-row">
+                <span>💰 Value</span>
+                <div class="gm-score-track"><div class="gm-score-fill gm-bar-animate" style="--target:{{ (phone.value_score*10)|round|int }}%"></div></div>
+                <span class="gm-score-num">{{ phone.value_score }}</span>
+              </div>
+            </div>
           </div>
-          <div class="gm-score-bar-row">
-            <span>🔋 Battery</span>
-            <div class="gm-score-track"><div class="gm-score-fill" style="width:{{ (phone.battery_score*10)|round|int }}%"></div></div>
-            <span class="gm-score-num">{{ phone.battery_score }}</span>
+
+          <!-- Primary actions -->
+          <div class="gm-match-actions">
+            <button class="btn gm-btn-outline gm-btn-lg gm-compare-add" data-phone-id="{{ phone.phone_id }}" data-phone-name="{{ phone.model }}">
+              <i class="bi bi-arrow-left-right"></i> Compare
+            </button>
+            <a class="btn gm-btn-primary gm-btn-lg gm-match-buy" target="_blank" rel="noopener"
+               href="https://www.samsung.com/in/smartphones/all-smartphones/">
+              <i class="bi bi-bag-check"></i> Buy now
+            </a>
           </div>
-          <div class="gm-score-bar-row">
-            <span>💰 Value</span>
-            <div class="gm-score-track"><div class="gm-score-fill" style="width:{{ (phone.value_score*10)|round|int }}%"></div></div>
-            <span class="gm-score-num">{{ phone.value_score }}</span>
+
+          <!-- Why we picked this -->
+          <div class="gm-match-why">
+            <span class="gm-match-why-title"><i class="bi bi-stars"></i> Why we picked this</span>
+            <p class="gm-match-why-text gm-rank-reason">{{ phone.reason }}</p>
           </div>
         </div>
-
-        <ul class="gm-spec-list">
-          <li><i class="bi bi-cpu"></i> {{ phone.processor }}</li>
-          <li><i class="bi bi-memory"></i> {{ phone.ram_gb }}GB RAM · {{ phone.storage_gb }}GB</li>
-          <li><i class="bi bi-battery-charging"></i> {{ phone.battery_mah }}mAh · {{ phone.charging_w }}W</li>
-          <li><i class="bi bi-camera"></i> {{ phone.main_camera_mp }}MP main</li>
-          <li><i class="bi bi-aspect-ratio"></i> {{ phone.display_inch }}" · {{ phone.refresh_rate_hz }}Hz</li>
-        </ul>
-
-        <button class="btn gm-btn-outline gm-compare-add" data-phone-id="{{ phone.phone_id }}" data-phone-name="{{ phone.model }}">
-          <i class="bi bi-arrow-left-right"></i> Add to compare
-        </button>
       </article>
+
+      <!-- ===== SECTION 2 · MORE RECOMMENDATIONS ===== -->
+      {% if top3|length > 1 %}
+      <div class="gm-section-head gm-section-head--sm gm-mt-lg gm-more-head">
+        <span class="gm-eyebrow">Runners-up</span>
+        <h2>More recommendations</h2>
+        <p class="gm-section-sub">Two more Galaxy phones that scored highly for your preferences.</p>
+      </div>
+      <div class="gm-more-grid">
+      {% endif %}
+      {% else %}
+      <!-- Runner-up card (#2, #3) -->
+      <article class="gm-more-card" data-reveal style="transition-delay: {{ loop.index0 * 90 }}ms;">
+        <button class="gm-wishlist-toggle gm-more-wish" type="button" data-phone-id="{{ phone.phone_id }}" aria-label="Toggle wishlist">
+          <i class="bi bi-heart"></i>
+        </button>
+        <div class="gm-more-rank">#{{ phone.rank }}</div>
+        <div class="gm-more-media" aria-hidden="true">
+          <div class="gm-more-phone gm-lux-cat-{{ phone.category }}">
+            <span class="gm-more-phone-cam"></span>
+          </div>
+        </div>
+        <div class="gm-more-body">
+          <div class="gm-more-topline">
+            <h3 class="gm-more-name gm-rank-model">{{ phone.model }}</h3>
+            <span class="gm-more-match">{{ phone.match_score|round|int }}%</span>
+          </div>
+          <div class="gm-more-price gm-rank-price">₹{{ '{:,}'.format(phone.price_inr) }}</div>
+          <ul class="gm-more-specs">
+            <li><i class="bi bi-cpu"></i> {{ phone.processor }}</li>
+            <li><i class="bi bi-memory"></i> {{ phone.ram_gb }}GB · {{ phone.storage_gb }}GB</li>
+            <li><i class="bi bi-battery-charging"></i> {{ phone.battery_mah }}mAh · {{ phone.charging_w }}W</li>
+            <li><i class="bi bi-camera"></i> {{ phone.main_camera_mp }}MP · {{ phone.display_inch }}" {{ phone.refresh_rate_hz }}Hz</li>
+          </ul>
+          <div class="gm-more-actions">
+            <a class="btn gm-btn-primary gm-btn-sm gm-more-explore" target="_blank" rel="noopener"
+               href="https://www.samsung.com/in/smartphones/all-smartphones/">
+              Explore phone <i class="bi bi-arrow-right"></i>
+            </a>
+            <button class="btn gm-btn-outline gm-btn-sm gm-compare-add" data-phone-id="{{ phone.phone_id }}" data-phone-name="{{ phone.model }}">
+              <i class="bi bi-arrow-left-right"></i> Compare
+            </button>
+          </div>
+        </div>
+      </article>
+      {% endif %}
+      {% if loop.last and top3|length > 1 %}
+      </div>
+      {% endif %}
       {% endfor %}
     </div>
+
+    <!-- ===== Recommendation Insights (radar) ===== -->
+    <div class="gm-section-head gm-section-head--sm gm-mt-lg">
+      <span class="gm-eyebrow">Why this phone</span>
+      <h2>Recommendation Insights</h2>
+      <p class="gm-section-sub">A visual breakdown of each pick's strengths across five dimensions. Switch between your Top 3 to compare their shapes.</p>
+    </div>
+
+    <div class="gm-card gm-insights-card" id="gm-insights">
+      <div class="gm-insights-tabs" id="gm-insights-tabs" role="tablist" aria-label="Choose a recommendation">
+        {% for phone in top3 %}
+        <button type="button" class="gm-insights-tab{% if loop.first %} is-active{% endif %}"
+                role="tab" data-index="{{ loop.index0 }}"
+                aria-selected="{{ 'true' if loop.first else 'false' }}">
+          <span class="gm-insights-tab-rank">#{{ phone.rank }}</span>
+          <span class="gm-insights-tab-name">{{ phone.model }}</span>
+        </button>
+        {% endfor %}
+      </div>
+
+      <div class="gm-insights-body">
+        <div class="gm-insights-chart">
+          <svg id="gm-radar-svg" viewBox="0 0 320 320" role="img"
+               aria-label="Radar chart of recommendation strengths">
+            <!-- Rendered by insights.js -->
+          </svg>
+          <div class="gm-radar-tooltip" id="gm-radar-tooltip" role="status" aria-live="polite"></div>
+        </div>
+
+        <div class="gm-insights-legend" id="gm-insights-legend">
+          <!-- Dimension rows rendered by insights.js -->
+        </div>
+      </div>
+    </div>
+
+    <script id="gm-insights-data" type="application/json">{{ top3|tojson }}</script>
+
+    {% if upgrade %}
+    <!-- ============================================================
+         SECTION · SMARTER UPGRADE (complements the Budget Simulator)
+         ============================================================ -->
+    <section class="gm-upgrade" data-reveal>
+      <div class="gm-section-head">
+        <span class="gm-eyebrow">Smarter upgrade</span>
+        <h2>Smarter Upgrade</h2>
+        <p class="gm-section-sub">A small increase today can unlock a noticeably better Galaxy experience.</p>
+      </div>
+
+      <div class="gm-upgrade-compare">
+        <!-- LEFT: current best -->
+        <article class="gm-upgrade-card">
+          <span class="gm-upgrade-tag">Current best recommendation</span>
+          <div class="gm-upgrade-media" aria-hidden="true">
+            <div class="gm-upgrade-phone gm-lux-cat-{{ upgrade.current.category }}"><span class="gm-upgrade-cam"></span></div>
+          </div>
+          <h3 class="gm-upgrade-name">{{ upgrade.current.model }}</h3>
+          <div class="gm-upgrade-price">₹{{ '{:,}'.format(upgrade.current.price_inr) }}</div>
+          <div class="gm-upgrade-match"><span>{{ upgrade.current.match_score|round|int }}%</span> match</div>
+        </article>
+
+        <!-- MIDDLE: price delta -->
+        <div class="gm-upgrade-delta" aria-hidden="true">
+          <span class="gm-upgrade-plus">+₹{{ '{:,}'.format(upgrade.price_delta) }}</span>
+          <i class="bi bi-arrow-right"></i>
+        </div>
+
+        <!-- RIGHT: recommended upgrade -->
+        <article class="gm-upgrade-card gm-upgrade-card--better">
+          <span class="gm-upgrade-tag gm-upgrade-tag--better"><i class="bi bi-stars"></i> Recommended upgrade</span>
+          <div class="gm-upgrade-media" aria-hidden="true">
+            <div class="gm-upgrade-phone gm-lux-cat-{{ upgrade.pick.category }}"><span class="gm-upgrade-cam"></span></div>
+          </div>
+          <h3 class="gm-upgrade-name">{{ upgrade.pick.model }}</h3>
+          <div class="gm-upgrade-price">₹{{ '{:,}'.format(upgrade.pick.price_inr) }}</div>
+          <div class="gm-upgrade-match gm-upgrade-match--better"><span>{{ upgrade.pick.match_score|round|int }}%</span> match</div>
+        </article>
+      </div>
+
+      <!-- Dynamic improvement panel -->
+      <div class="gm-upgrade-panel">
+        <p class="gm-upgrade-panel-title">With an additional <strong>+₹{{ '{:,}'.format(upgrade.price_delta) }}</strong> you unlock:</p>
+        <ul class="gm-upgrade-gains">
+          {% for gain in upgrade.gains %}
+          <li><i class="bi bi-check-circle-fill"></i> {{ gain }}</li>
+          {% endfor %}
+        </ul>
+        <button type="button" class="btn gm-btn-primary gm-btn-lg gm-upgrade-cta" id="gm-view-upgrade">
+          View upgrade <i class="bi bi-arrow-down-circle"></i>
+        </button>
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- ============================================================
+         SECTION · BETTER TOGETHER (Galaxy ecosystem accessories)
+         ============================================================ -->
+    <section class="gm-together" data-reveal>
+      <div class="gm-section-head">
+        <span class="gm-eyebrow">Better together</span>
+        <h2>Better Together</h2>
+        <p class="gm-section-sub">Experience seamless connectivity across Samsung devices designed to work together.</p>
+      </div>
+
+      <div class="gm-together-grid">
+        <a class="gm-together-card gm-together-card--buds" href="https://www.samsung.com/in/audio-devices/galaxy-buds/" target="_blank" rel="noopener">
+          <div class="gm-together-overlay"></div>
+          <div class="gm-together-top">
+            <h3 class="gm-together-name"><span class="gm-together-name-serif">Galaxy</span> Buds</h3>
+          </div>
+          <div class="gm-together-bottom">
+            <p class="gm-together-desc">Immersive sound that follows you everywhere.</p>
+            <span class="gm-together-btn">Discover <i class="bi bi-arrow-right"></i></span>
+          </div>
+        </a>
+
+        <a class="gm-together-card gm-together-card--watch" href="https://www.samsung.com/in/watches/galaxy-watch/" target="_blank" rel="noopener">
+          <div class="gm-together-overlay"></div>
+          <div class="gm-together-top">
+            <h3 class="gm-together-name"><span class="gm-together-name-serif">Galaxy</span> Watch</h3>
+          </div>
+          <div class="gm-together-bottom">
+            <p class="gm-together-desc">Stay healthy, connected, and in control.</p>
+            <span class="gm-together-btn">Discover <i class="bi bi-arrow-right"></i></span>
+          </div>
+        </a>
+
+        <a class="gm-together-card gm-together-card--tag" href="https://www.samsung.com/in/mobile-accessories/galaxy-smarttag/" target="_blank" rel="noopener">
+          <div class="gm-together-overlay"></div>
+          <div class="gm-together-top">
+            <h3 class="gm-together-name"><span class="gm-together-name-serif">Galaxy</span> SmartTag</h3>
+          </div>
+          <div class="gm-together-bottom">
+            <p class="gm-together-desc">Never lose what matters most.</p>
+            <span class="gm-together-btn">Discover <i class="bi bi-arrow-right"></i></span>
+          </div>
+        </a>
+      </div>
+    </section>
+
 
     <!-- Full ranking table -->
     <div class="gm-section-head gm-section-head--sm gm-mt-lg">
@@ -127,6 +375,24 @@
       </table>
     </div>
 
+    <!-- ===== End-of-journey CTA ===== -->
+    <div class="gm-next-cta" data-reveal>
+      <div class="gm-next-cta-inner">
+        <span class="gm-eyebrow">What's next</span>
+        <h2 class="gm-next-cta-title">Want to explore another Galaxy phone?</h2>
+        <p class="gm-next-cta-sub">You can refine your preferences or take the discovery quiz again to find another Galaxy phone that better matches your needs.</p>
+        <div class="gm-next-cta-actions">
+          <a href="{{ url_for('home') }}" class="btn gm-btn-primary gm-btn-lg">
+            <i class="bi bi-sliders"></i> Refine your preferences
+          </a>
+          <a href="{{ url_for('history_page') }}" class="btn gm-btn-outline gm-btn-lg">
+            <i class="bi bi-clock-history"></i> View recommendation history
+          </a>
+        </div>
+        <p class="gm-next-cta-note"><i class="bi bi-check2-circle"></i> This recommendation has been saved to your history automatically.</p>
+      </div>
+    </div>
+
     {% endif %}
   </div>
 </section>
@@ -143,10 +409,29 @@
   </div>
 </div>
 
+{% endif %}
 {% endblock %}
 
 {% block extra_scripts %}
+{% if not empty_recommend %}
 <script id="all-results-phones-data" type="application/json">{{ all_phones_json|tojson }}</script>
 <script id="recommendation-history-data" type="application/json">{{ history_payload|tojson }}</script>
 <script src="{{ url_for('static', filename='js/results.js') }}"></script>
+<script src="{{ url_for('static', filename='js/insights.js') }}"></script>
+<script>
+  // "View upgrade" — smooth-scroll to and briefly highlight the upgrade card.
+  (function () {
+    var btn = document.getElementById("gm-view-upgrade");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      var target = document.querySelector(".gm-upgrade-card--better");
+      if (!target) return;
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      target.classList.remove("gm-upgrade-pulse");
+      void target.offsetWidth;               // restart the animation
+      target.classList.add("gm-upgrade-pulse");
+    });
+  })();
+</script>
+{% endif %}
 {% endblock %}

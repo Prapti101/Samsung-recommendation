@@ -46,7 +46,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     goBtn.disabled = !(selected[0] && selected[1]);
 
-    if (window.GalaxyMatchI18n) window.GalaxyMatchI18n.translatePage(slotsWrap);
   }
 
   function addToCompare(id, name) {

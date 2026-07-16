@@ -5,6 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}Galaxy Match — Samsung Recommendation Assistant{% endblock %}</title>
 
+<!-- Apply the saved theme before first paint to avoid a flash of the wrong
+     theme. 'auto' resolves against the OS via prefers-color-scheme. -->
+<script>
+  (function () {
+    try {
+      var choice = localStorage.getItem("gmTheme") || "light";
+      var dark = choice === "dark" ||
+        (choice === "auto" && window.matchMedia &&
+         window.matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme-choice", choice);
+    } catch (e) {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+  })();
+</script>
+
 <!-- Bootstrap 5 -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
 
@@ -19,9 +36,10 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body{% if request.args.get('embed') %} class="gm-embedded"{% endif %}>
 
-<nav class="gm-navbar">
+{% if not request.args.get('embed') %}
+<nav class="gm-navbar" id="gm-navbar">
   <div class="gm-container gm-navbar-inner">
     <a class="gm-brand" href="{{ url_for('home') }}">
       <span class="gm-brand-mark">◆</span>
@@ -30,50 +48,110 @@
     <div class="gm-nav-links">
       <a href="{{ url_for('home') }}">Home</a>
       <a href="{{ url_for('compare_page') }}">Compare</a>
-      <a href="{{ url_for('wishlist_page') }}">Wishlist</a>
+      <a href="{{ url_for('home') }}#build">Best Deals</a>
+      <a href="{{ url_for('recommend') }}" class="gm-nav-recommend">Recommend</a>
       <a href="{{ url_for('history_page') }}">History</a>
-      <a href="{{ url_for('home') }}#personas">Personas</a>
     </div>
-    <div class="gm-lang-switch" data-i18n-skip>
-      <select id="gm-lang-select" class="form-select form-select-sm gm-lang-select" aria-label="Select language">
-        <option value="en">English</option>
-        <option value="hi">हिन्दी</option>
-        <option value="bn">বাংলা</option>
-        <option value="ta">தமிழ்</option>
-        <option value="te">తెలుగు</option>
-        <option value="mr">मराठी</option>
-        <option value="gu">ગુજરાતી</option>
-        <option value="kn">ಕನ್ನಡ</option>
-        <option value="ml">മലയാളം</option>
-        <option value="pa">ਪੰਜਾਬੀ</option>
-        <option value="or">ଓଡ଼ିଆ</option>
-        <option value="ur">اردو</option>
-      </select>
+    <div class="gm-nav-right">
+      <div class="gm-theme-switch" id="gm-theme-switch" role="group" aria-label="Theme">
+        <span class="gm-theme-thumb" id="gm-theme-thumb" aria-hidden="true"></span>
+        <button type="button" class="gm-theme-opt" data-theme-value="light" title="Light" aria-label="Light theme">
+          <i class="bi bi-sun-fill"></i>
+        </button>
+        <button type="button" class="gm-theme-opt" data-theme-value="dark" title="Dark" aria-label="Dark theme">
+          <i class="bi bi-moon-stars-fill"></i>
+        </button>
+        <button type="button" class="gm-theme-opt" data-theme-value="auto" title="Auto (system)" aria-label="Auto theme, follows system">
+          <i class="bi bi-display"></i>
+        </button>
+      </div>
+      <a href="{{ url_for('wishlist_page') }}" class="gm-nav-icon" title="Wishlist" aria-label="Wishlist">
+        <i class="bi bi-heart"></i>
+      </a>
+      <a href="{{ url_for('home') }}#build" class="gm-nav-shop">Shop</a>
     </div>
   </div>
 </nav>
+{% endif %}
 
 <main>
   {% block content %}{% endblock %}
 </main>
 
+{% if not request.args.get('embed') %}
 <footer class="gm-footer">
-  <div class="gm-container gm-footer-inner">
-    <div>
-      <div class="gm-brand gm-brand-footer"><span class="gm-brand-mark">◆</span><span>Galaxy Match</span></div>
-      <p class="gm-footer-note">An independent recommendation assistant built with the Weighted Sum Model.
-        Not an official Samsung product. Prices are indicative (India, 2024&ndash;2025).</p>
+  <div class="gm-container">
+    <div class="gm-footer-top">
+      <!-- Brand / About -->
+      <div class="gm-footer-brandcol">
+        <div class="gm-brand gm-brand-footer"><span class="gm-brand-mark">◆</span><span>Galaxy Match</span></div>
+        <p class="gm-footer-about">The intelligent way to match a Samsung Galaxy phone to how you live — camera, performance, battery and value, weighed transparently with a Weighted Sum Model.</p>
+        <div class="gm-footer-social">
+          <a href="https://www.instagram.com/samsungindia/" target="_blank" rel="noopener" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+          <a href="https://twitter.com/SamsungIndia" target="_blank" rel="noopener" aria-label="X / Twitter"><i class="bi bi-twitter-x"></i></a>
+          <a href="https://www.youtube.com/@SamsungIndia" target="_blank" rel="noopener" aria-label="YouTube"><i class="bi bi-youtube"></i></a>
+          <a href="https://www.facebook.com/SamsungIndia" target="_blank" rel="noopener" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+        </div>
+      </div>
+
+      <!-- Quick Links -->
+      <div class="gm-footer-col">
+        <h4 class="gm-footer-h">Quick Links</h4>
+        <ul>
+          <li><a href="{{ url_for('home') }}">Home</a></li>
+          <li><a href="{{ url_for('home') }}#build">Find your match</a></li>
+          <li><a href="{{ url_for('compare_page') }}">Compare</a></li>
+          <li><a href="{{ url_for('wishlist_page') }}">Wishlist</a></li>
+          <li><a href="{{ url_for('history_page') }}">History</a></li>
+        </ul>
+      </div>
+
+      <!-- Support -->
+      <div class="gm-footer-col">
+        <h4 class="gm-footer-h">Support</h4>
+        <ul>
+          <li><a href="{{ url_for('quiz') }}">Discovery Quiz</a></li>
+          <li><a href="https://www.samsung.com/in/support/" target="_blank" rel="noopener">Help Centre</a></li>
+          <li><a href="https://www.samsung.com/in/support/warranty/" target="_blank" rel="noopener">Warranty</a></li>
+          <li><a href="https://www.samsung.com/in/support/contact/" target="_blank" rel="noopener">Contact Support</a></li>
+        </ul>
+      </div>
+
+      <!-- Samsung Resources -->
+      <div class="gm-footer-col">
+        <h4 class="gm-footer-h">Samsung Resources</h4>
+        <ul>
+          <li><a href="https://www.samsung.com/in/smartphones/all-smartphones/" target="_blank" rel="noopener">All Smartphones</a></li>
+          <li><a href="https://www.samsung.com/in/watches/galaxy-watch/" target="_blank" rel="noopener">Galaxy Watch</a></li>
+          <li><a href="https://www.samsung.com/in/audio-devices/galaxy-buds/" target="_blank" rel="noopener">Galaxy Buds</a></li>
+          <li><a href="https://www.samsung.com/in/mobile-accessories/galaxy-smarttag/" target="_blank" rel="noopener">Galaxy SmartTag</a></li>
+        </ul>
+      </div>
+
+      <!-- Contact -->
+      <div class="gm-footer-col">
+        <h4 class="gm-footer-h">Contact</h4>
+        <ul>
+          <li><a href="mailto:hello@galaxymatch.app"><i class="bi bi-envelope"></i> hello@galaxymatch.app</a></li>
+          <li><a href="tel:1800407267864"><i class="bi bi-telephone"></i> 1800-407-267864</a></li>
+          <li><span><i class="bi bi-geo-alt"></i> Bengaluru, India</span></li>
+        </ul>
+      </div>
     </div>
-    <div class="gm-footer-links">
-      <span>Flask · Pandas · NumPy · Matplotlib</span>
+
+    <div class="gm-footer-bottom">
+      <p class="gm-footer-copy">© {{ 2026 }} Galaxy Match · Designed &amp; Developed for Samsung Mobile Recommendation Project</p>
+      <p class="gm-footer-note">An independent recommendation assistant built with the Weighted Sum Model. Not an official Samsung product. Prices are indicative (India, 2024&ndash;2025).</p>
     </div>
   </div>
 </footer>
+<button class="gm-backtotop" id="gm-backtotop" aria-label="Back to top"><i class="bi bi-arrow-up"></i></button>
+{% endif %}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 <script src="{{ url_for('static', filename='js/storage.js') }}"></script>
-<script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>

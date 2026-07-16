@@ -100,15 +100,54 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ target_lang: lang, texts }),
       });
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (!data || !Array.isArray(data.translations) || data.translations.length !== texts.length) {
-        return null;
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        // Surface the server's precise reason so we can message the user
+        // instead of silently staying English.
+        const message = (data && data.message) ||
+          "Translation is temporarily unavailable.";
+        return { translations: null, error: (data && data.error) || "http_" + res.status, message };
       }
-      return data.translations;
+      if (!data || !Array.isArray(data.translations) || data.translations.length !== texts.length) {
+        return { translations: null, error: "bad_response",
+                 message: "Translation is temporarily unavailable." };
+      }
+      return { translations: data.translations, error: null, message: null };
     } catch (_) {
-      return null;
+      return { translations: null, error: "network_error",
+               message: "Couldn't reach the translation service." };
     }
+  }
+
+  /* Lightweight, non-blocking toast so translation failures are never silent
+     and never leave the UI looking "stuck". Reuses design tokens via inline
+     styles to avoid touching the stylesheet. */
+  function showToast(message) {
+    let toast = document.getElementById("gm-i18n-toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "gm-i18n-toast";
+      toast.setAttribute("role", "status");
+      toast.setAttribute("data-i18n-skip", "");
+      toast.style.cssText = [
+        "position:fixed", "left:50%", "bottom:24px", "transform:translateX(-50%)",
+        "background:#10131A", "color:#fff", "padding:12px 20px", "border-radius:100px",
+        "font:500 .88rem/1.3 'Inter',sans-serif", "box-shadow:0 16px 40px rgba(16,20,40,.28)",
+        "z-index:9999", "max-width:90vw", "text-align:center", "opacity:0",
+        "transition:opacity .25s ease, transform .25s ease", "pointer-events:none",
+      ].join(";");
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    requestAnimationFrame(() => {
+      toast.style.opacity = "1";
+      toast.style.transform = "translateX(-50%) translateY(-4px)";
+    });
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateX(-50%)";
+    }, 4200);
   }
 
   async function translatePage(root) {
@@ -118,7 +157,7 @@
     document.documentElement.lang = lang;
     document.documentElement.dir = RTL_LANGS.has(lang) ? "rtl" : "ltr";
 
-    if (lang === DEFAULT_LANG) return;
+    if (lang === DEFAULT_LANG) return { ok: true };
 
     const items = collectTranslatables(root);
     const cache = readCache(lang);
@@ -135,16 +174,21 @@
       missing.push(key);
     });
 
-    if (!missing.length) return;
+    if (!missing.length) return { ok: true };
 
     const chunks = chunkArray(missing, CHUNK_SIZE);
     const results = await Promise.all(chunks.map((chunk) => fetchTranslations(lang, chunk)));
 
     const updatedCache = { ...cache };
     let changed = false;
+    let firstError = null;
     chunks.forEach((chunk, idx) => {
-      const translated = results[idx];
-      if (!translated) return; // Gemini unavailable for this batch -> stays English.
+      const result = results[idx];
+      const translated = result && result.translations;
+      if (!translated) {
+        if (!firstError && result) firstError = result;
+        return; // this batch stays English
+      }
       chunk.forEach((original, i) => {
         const t = translated[i];
         if (typeof t === "string" && t.trim()) {
@@ -158,15 +202,36 @@
       writeCache(lang, updatedCache);
       applyTranslations(items, updatedCache);
     }
+
+    if (firstError) {
+      return { ok: false, error: firstError.error, message: firstError.message };
+    }
+    return { ok: true };
   }
 
   function initLanguageSwitcher() {
     const select = document.getElementById("gm-lang-select");
     if (!select) return;
     select.value = getCurrentLang();
-    select.addEventListener("change", () => {
-      setCurrentLang(select.value);
-      translatePage(document.body);
+    select.addEventListener("change", async () => {
+      const chosen = select.value;
+      setCurrentLang(chosen);
+      const status = await translatePage(document.body);
+      if (status && status.ok === false) {
+        // Never leave a half-translated page: message the user and fall back
+        // cleanly to English.
+        showToast(status.message || "Translation is temporarily unavailable. Showing English.");
+        setCurrentLang(DEFAULT_LANG);
+        select.value = DEFAULT_LANG;
+        document.documentElement.lang = DEFAULT_LANG;
+        document.documentElement.dir = "ltr";
+        // If some text was already swapped from a prior cached session, reload
+        // to restore clean English — but defer so the toast is readable first.
+        const hadCachedText = Object.keys(readCache(chosen)).length > 0;
+        if (chosen !== DEFAULT_LANG && hadCachedText) {
+          setTimeout(() => window.location.reload(), 1800);
+        }
+      }
     });
   }
 
