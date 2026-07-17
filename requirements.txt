@@ -1,5 +1,9 @@
+# Runtime dependencies for the web service.
+# Pinned to the versions the app is actually developed and tested against
+# (Python 3.13). The previous pins (numpy 1.26.4 / pandas 2.2.2) were never the
+# versions installed locally and have no Python 3.13 wheels, so a deploy would
+# have tried to compile numpy from source and failed.
 Flask==3.0.3
-pandas==2.2.2
-numpy==1.26.4
-matplotlib==3.8.4
-nbformat==5.10.4
+pandas==3.0.3
+numpy==2.5.1
+gunicorn==23.0.0

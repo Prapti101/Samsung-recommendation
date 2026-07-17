@@ -1,0 +1,6 @@
+# Tools used only for offline data/EDA work, never imported by the web service.
+# Kept out of requirements.txt so deploys stay fast and have fewer moving parts.
+-r requirements.txt
+matplotlib==3.8.4
+nbformat==5.10.4
+openpyxl==3.1.5

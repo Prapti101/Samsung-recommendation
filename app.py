@@ -26,11 +26,16 @@ from recommender import get_top_recommendations, get_full_ranking, generate_budg
 from ai_longevity import compute_ai_longevity
 from ecosystem import get_ecosystem_recommendations
 from community import get_community_insights
+from upgrade import build_upgrade_tiers
 
 app = Flask(__name__)
 # Secret key enables server-side session storage (used to remember the last
 # recommendation inputs so the "Recommend" tab can redisplay results on GET).
-app.secret_key = "galaxy-match-local-dev-key"
+# Signs the session cookie that remembers the last recommendation inputs.
+# The literal below is a development default and is public in this repo, so any
+# deployment should set SECRET_KEY in its environment. Behaviour is identical
+# either way — only the signing key changes.
+app.secret_key = os.environ.get("SECRET_KEY", "galaxy-match-local-dev-key")
 
 CSV_PATH = "phones.csv"
 
@@ -397,67 +402,18 @@ def recommend():
     # current #1, within the raised budget). No new scoring logic; the feature
     # list and improvement bullets are derived from existing spec fields.
     # ------------------------------------------------------------------
+    # Business logic lives in upgrade.py; the route only supplies data. The whole
+    # tier-building block used to be inlined here, and picked whichever phone in
+    # each price window scored best rather than the nearest one above the pick.
     upgrade = None
     if top3_dicts:
-        current = top3_dicts[0]
-        full_pool = get_full_ranking(weights, budget=None, csv_path=CSV_PATH)
-        pool_dicts = [_phone_to_dict(row) for _, row in full_pool.iterrows()]
-        # pool_dicts is already ranked by match_score (best first).
-
-        def compute_gains(cur, pick):
-            g = []
-            if pick["main_camera_mp"] > cur["main_camera_mp"]:
-                g.append("Better camera — {}MP vs {}MP main sensor".format(
-                    pick["main_camera_mp"], cur["main_camera_mp"]))
-            if pick["performance_score"] > cur["performance_score"]:
-                g.append("Faster processor — {}".format(pick["processor"]))
-            if pick["battery_mah"] > cur["battery_mah"]:
-                g.append("Longer battery life — {:,}mAh vs {:,}mAh".format(
-                    pick["battery_mah"], cur["battery_mah"]))
-            if pick["display_inch"] > cur["display_inch"] or \
-               pick["refresh_rate_hz"] > cur["refresh_rate_hz"]:
-                g.append("Better display — {}\" · {}Hz".format(
-                    pick["display_inch"], pick["refresh_rate_hz"]))
-            if pick["charging_w"] > cur["charging_w"]:
-                g.append("Faster charging — {}W vs {}W".format(
-                    pick["charging_w"], cur["charging_w"]))
-            if pick["value_score"] > cur["value_score"]:
-                g.append("Better overall value rating")
-            return g
-
-        # Best phone unlocked at each small budget increase (+₹2k … +₹10k).
-        # "Adding ₹X" means ₹X on top of the CURRENT pick's price, and we show
-        # the best phone at that exact new price point (priced above the current
-        # pick, up to current price + ₹X).
-        tiers = []
-        for delta in (2000, 4000, 6000, 8000, 10000):
-            ceiling = current["price_inr"] + delta
-            candidates = [p for p in pool_dicts
-                          if current["price_inr"] < p["price_inr"] <= ceiling]
-            pick = candidates[0] if candidates else None   # pool order = best score
-            if pick:
-                tiers.append({
-                    "delta": delta,
-                    "new_budget": ceiling,
-                    "available": True,
-                    "pick": pick,
-                    "price_delta": pick["price_inr"] - current["price_inr"],
-                    "features": _phone_feature_list(pick),
-                    "gains": compute_gains(current, pick),
-                    # pick is a _phone_to_dict, so it already carries the
-                    # catalog's official samsung.com link.
-                    "explore_url": pick["official_url"],
-                })
-            else:
-                tiers.append({"delta": delta, "new_budget": ceiling,
-                              "available": False})
-
-        upgrade = {
-            "current": current,
-            "current_explore_url": current["official_url"],
-            "tiers": tiers,
-            "has_any": any(t["available"] for t in tiers),
-        }
+        catalog = [_phone_to_dict(row) for _, row in
+                   get_full_ranking(weights, budget=None, csv_path=CSV_PATH).iterrows()]
+        upgrade = build_upgrade_tiers(
+            current=top3_dicts[0],
+            catalog=catalog,
+            feature_list_fn=_phone_feature_list,
+        )
 
     return render_template(
         "results.html",
@@ -662,4 +618,16 @@ def api_simulate_budget():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    # LOCAL DEVELOPMENT ONLY.
+    #
+    # In production the Procfile starts `gunicorn app:app`, which imports `app`
+    # and never runs this block — so hosting cannot accidentally start Flask's
+    # development server.
+    #
+    # The defaults below are unchanged (debug on, port 5000), so `python app.py`
+    # behaves exactly as it always has. Both are overridable by environment
+    # variable because debug=True on a public URL exposes the Werkzeug console,
+    # which allows arbitrary code execution on the server.
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("FLASK_DEBUG", "1") == "1"
+    app.run(debug=debug, host="0.0.0.0", port=port)

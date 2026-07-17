@@ -1,24 +1,37 @@
 """
-feature_engineering.py
------------------------
-Transforms raw phone specifications (phones.csv) into 4 scores on a 0-10
-scale, which the Weighted Sum Model (WSM) in recommender.py combines
-according to persona weights:
+feature_engineering.py — STAGE 1 of the recommendation pipeline
+==============================================================
+Turns raw phone specs (phones.csv) into comparable scores. This module is the
+single source of truth for "how good is this phone at X"; nothing else in the
+codebase scores a phone.
 
-    Camera Score       - main / telephoto / ultra-wide / front cameras
-    Performance Score   - chipset tier, RAM, high-refresh display
-    Battery Score       - battery capacity and charging speed
-    Value Score         - "spec-per-rupee": how much phone you get for the price
+Pipeline context:
+    phones.csv
+      -> [THIS MODULE]  raw specs        -> per-dimension scores (0-10)
+      -> recommender.py per-dimension    -> weighted match score (0-100)
+      -> app.py         match score      -> page / API response
 
-Design note (why the scores differentiate personas):
-Camera, Performance and Battery are scored on **absolute anchors** (against
-sensible best-in-class reference values) rather than pure min-max
-normalisation. Pure min-max let a single outlier (e.g. a 200MP camera or a
-5000mAh battery) crush every other phone toward zero, which made one phone win
-for *every* persona. Absolute anchoring keeps a real 4000mAh battery or a 50MP
-camera at a sensible mid-high score, so a phone's genuine strengths show
-through and different persona weightings surface different phones. Value stays
-relative (min-max) because "value for money" is inherently comparative.
+The four RANKED dimensions (what the WSM actually ranks on):
+    camera_score       main + telephoto + ultra-wide + front lenses
+    performance_score  chipset tier + RAM
+    battery_score      capacity + charging speed
+    display_score      panel tier + refresh rate + size
+
+One derived dimension (informational, NOT ranked):
+    value_score        spec-per-rupee, surfaced in Community Insights
+
+Why absolute anchors, not min-max
+---------------------------------
+Camera / performance / battery / display are measured against fixed best-in-class
+references (see the REFERENCE_* constants). Pure min-max normalisation let one
+outlier (a 200MP camera, a 5000mAh battery) crush every other phone toward zero,
+which made a single phone win for *every* persona. Anchoring keeps a real
+4000mAh battery at a sensible mid score, so genuine strengths show through and
+different persona weightings surface different phones. value_score is the
+exception and stays min-max, because "value for money" is only meaningful
+relative to the rest of the catalog.
+
+Every score in this module is on the same 0-10 scale (SCORE_MAX).
 """
 
 import pandas as pd
@@ -67,10 +80,34 @@ CHIPSET_TIER = {
 # known budget silicon.)
 DEFAULT_CHIPSET_SCORE = 20
 
+# ----------------------------------------------------------------------
+# Scale + reference anchors
+# ----------------------------------------------------------------------
+# Every dimension score in this module is produced on ONE scale: 0-10.
+# recommender.py combines them with weights that sum to 1.0, so the weighted
+# total is also 0-10; it is multiplied by 10 exactly once, at the presentation
+# boundary, to read as a 0-100 "match %". There is no other scale in the system.
+SCORE_MAX = 10.0
+
+# "Best in class" anchors. Scores are measured against these fixed references
+# rather than min-max normalised, so a phone's real capability shows through.
+# (Pure min-max let one 200MP outlier crush every other phone toward zero,
+# which made a single phone win for *every* persona.)
+MAX_CHIPSET_TIER = 98      # fastest entry in CHIPSET_TIER
+REFERENCE_RAM_GB = 12
+REFERENCE_MAIN_MP = 200
+REFERENCE_LENS_MP = 50     # telephoto / ultra-wide / front reference
+REFERENCE_BATTERY_MAH = 5500
+REFERENCE_CHARGING_W = 65
+REFERENCE_REFRESH_HZ = 120
+BASELINE_REFRESH_HZ = 60   # 60Hz is the floor, so it scores 0 on refresh
+REFERENCE_SIZE_MAX_IN = 7.6
+REFERENCE_SIZE_MIN_IN = 6.0
+
 
 def _clip10(series: pd.Series) -> pd.Series:
-    """Clamp a numeric series to the 0-10 range and round to 2 dp."""
-    return np.round(np.clip(series, 0, 10), 2)
+    """Clamp a numeric series to the 0-10 scale and round to 2 dp."""
+    return np.round(np.clip(series, 0, SCORE_MAX), 2)
 
 
 def _min_max_normalize(series: pd.Series, invert: bool = False,
@@ -104,25 +141,38 @@ def compute_camera_score(df: pd.DataFrame) -> pd.Series:
       - a small base keeps every phone off the zero floor.
     """
     score = (
-        np.sqrt(df["main_camera_mp"]) / np.sqrt(200) * 5.0 +
-        np.sqrt(df["telephoto_mp"]) / np.sqrt(50) * 3.2 +
-        np.sqrt(df["ultra_wide_mp"]) / np.sqrt(50) * 1.2 +
-        np.sqrt(df["front_camera_mp"]) / np.sqrt(50) * 1.1 +
-        1.5
+        np.sqrt(df["main_camera_mp"]) / np.sqrt(REFERENCE_MAIN_MP) * 5.0 +
+        np.sqrt(df["telephoto_mp"]) / np.sqrt(REFERENCE_LENS_MP) * 3.2 +
+        np.sqrt(df["ultra_wide_mp"]) / np.sqrt(REFERENCE_LENS_MP) * 1.2 +
+        np.sqrt(df["front_camera_mp"]) / np.sqrt(REFERENCE_LENS_MP) * 1.1 +
+        1.5                                   # floor: no phone scores a true zero
     )
     return _clip10(score)
 
 
 def compute_performance_score(df: pd.DataFrame) -> pd.Series:
     """
-    Performance score on an absolute anchor: chipset tier is the main driver,
-    with RAM and a high-refresh (120Hz+) display adding smaller bonuses.
+    Purpose : Score raw compute power on a 0-10 absolute anchor.
+    Inputs  : df with `processor` and `ram_gb`.
+    Output  : Series of 0-10 scores.
+    Algorithm:
+        chipset_tier / 98 * 8.6   -- the dominant driver; 98 = fastest chipset
+                                     in CHIPSET_TIER, so the class leader nears 8.6
+        + ram_gb / 12 * 1.4       -- headroom for multitasking; 12GB = reference
+
+    AUDIT FIX — refresh rate removed from this formula. It previously added a
+    +0.8 bonus for >=120Hz while compute_display_score() *also* scores refresh
+    rate, so a 120Hz phone was rewarded twice for one spec: once under
+    "Performance" and again under "Display". Every persona weights both
+    dimensions, so the double count silently inflated 120Hz phones in the final
+    WSM total. Refresh rate is a display property and is now scored there only.
+    The freed 0.8 was folded into chipset (8.0 -> 8.6) and RAM (1.2 -> 1.4) so a
+    top phone can still reach 10 and the dimension keeps its full 0-10 range.
     """
     chipset = df["processor"].map(CHIPSET_TIER).fillna(DEFAULT_CHIPSET_SCORE)
     score = (
-        chipset / 98 * 8.0 +
-        df["ram_gb"] / 12 * 1.2 +
-        (df["refresh_rate_hz"] >= 120).astype(float) * 0.8
+        chipset / MAX_CHIPSET_TIER * 8.6 +
+        df["ram_gb"] / REFERENCE_RAM_GB * 1.4
     )
     return _clip10(score)
 
@@ -134,25 +184,42 @@ def compute_battery_score(df: pd.DataFrame) -> pd.Series:
     a sensible mid value instead of being normalised down to near-zero.
     """
     score = (
-        df["battery_mah"] / 5500 * 7.0 +
-        df["charging_w"] / 65 * 3.0
+        df["battery_mah"] / REFERENCE_BATTERY_MAH * 7.0 +
+        df["charging_w"] / REFERENCE_CHARGING_W * 3.0
     )
     return _clip10(score)
 
 
-def compute_value_score(df: pd.DataFrame) -> pd.Series:
+def compute_value_score(df: pd.DataFrame, camera: pd.Series = None,
+                        performance: pd.Series = None,
+                        battery: pd.Series = None) -> pd.Series:
     """
-    "Spec-per-rupee": overall hardware quality (camera + performance + battery)
-    divided by sqrt(price) -- sqrt so premium flagships aren't punished as
-    harshly as a straight price ratio would, while budget phones still win the
-    value comparison. Value is inherently comparative, so it is min-max
-    normalised across the catalog.
+    Purpose : Rate "spec-per-rupee" on a 0-10 scale.
+    Inputs  : df with `price_inr`; optionally the three hardware scores if the
+              caller has already computed them (engineer_features does).
+    Output  : Series of 0-10 scores.
+    Algorithm:
+        (camera + performance + battery) / sqrt(price)
+        then min-max normalised across the catalog.
+        sqrt(price) rather than price so premium flagships aren't punished as
+        harshly as a straight ratio would, while budget phones still win.
+        Value is the one dimension that is *comparative* by nature ("value
+        against what?"), so min-max is correct here where it would be wrong for
+        the absolute-anchored dimensions.
+
+    NOTE ON SCOPE: value_score is NOT an input to the WSM ranking — see the
+    "value_score is deliberately not ranked" note in recommender.py. It is a
+    derived, informational metric surfaced in Community Insights.
+
+    The optional arguments exist to avoid recomputing the three hardware scores;
+    this function used to call compute_camera/performance/battery_score itself,
+    so engineer_features() computed each of them twice per request.
     """
-    overall_hw = (
-        compute_camera_score(df) +
-        compute_performance_score(df) +
-        compute_battery_score(df)
-    )
+    camera = compute_camera_score(df) if camera is None else camera
+    performance = compute_performance_score(df) if performance is None else performance
+    battery = compute_battery_score(df) if battery is None else battery
+
+    overall_hw = camera + performance + battery
     spec_per_sqrt_rupee = overall_hw / np.sqrt(df["price_inr"])
     return _min_max_normalize(spec_per_sqrt_rupee)
 
@@ -196,23 +263,44 @@ def compute_display_score(df: pd.DataFrame) -> pd.Series:
     the best screens score highest while budget panels still register as decent.
     """
     panel_score = _panel_tier(df["display_type"])
-    refresh_score = np.clip((df["refresh_rate_hz"] - 60) / (120 - 60), 0, 1)
-    size_score = np.clip((df["display_inch"] - 6.0) / (7.6 - 6.0), 0, 1)
+    refresh_score = np.clip(
+        (df["refresh_rate_hz"] - BASELINE_REFRESH_HZ)
+        / (REFERENCE_REFRESH_HZ - BASELINE_REFRESH_HZ), 0, 1)
+    size_score = np.clip(
+        (df["display_inch"] - REFERENCE_SIZE_MIN_IN)
+        / (REFERENCE_SIZE_MAX_IN - REFERENCE_SIZE_MIN_IN), 0, 1)
     score = panel_score * 4.0 + refresh_score * 4.0 + size_score * 2.0
     return _clip10(score)
 
 
+# The four dimensions the WSM ranks on. Kept here, next to the functions that
+# produce them, so recommender.py and the UI can never drift out of step with
+# the scorer.
+RANKED_DIMENSIONS = ("camera", "performance", "battery", "display")
+
+
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Adds camera_score, performance_score, battery_score, value_score and
-    display_score columns (0-10) to a copy of the input DataFrame.
+    Purpose : Attach every derived score to the raw catalog.
+    Inputs  : df of raw specs (the columns of phones.csv).
+    Output  : A copy with camera_score, performance_score, battery_score,
+              display_score and value_score added — all on the 0-10 SCORE_MAX
+              scale.
+    Algorithm: Each dimension is scored independently against fixed anchors, then
+              value_score is derived from the three hardware scores (passed in,
+              not recomputed).
     """
     out = df.copy()
-    out["camera_score"] = compute_camera_score(out)
-    out["performance_score"] = compute_performance_score(out)
-    out["battery_score"] = compute_battery_score(out)
-    out["value_score"] = compute_value_score(out)
+    camera = compute_camera_score(out)
+    performance = compute_performance_score(out)
+    battery = compute_battery_score(out)
+
+    out["camera_score"] = camera
+    out["performance_score"] = performance
+    out["battery_score"] = battery
     out["display_score"] = compute_display_score(out)
+    # Derived from the three above; reusing them avoids scoring each phone twice.
+    out["value_score"] = compute_value_score(out, camera, performance, battery)
     return out
 
 

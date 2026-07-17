@@ -108,7 +108,11 @@
         <div class="gm-persona-grid" id="personas">
           {% for p in personas %}
           <label class="gm-persona-card">
-            <input type="radio" name="persona_id" value="{{ p.id }}" {% if loop.first %}checked{% endif %}>
+            {# The persona's real WSM weights travel with the radio so home.js can
+               show them on the priority sliders. Without this the sliders sat at a
+               hardcoded 25% each and never reflected the persona actually in use. #}
+            <input type="radio" name="persona_id" value="{{ p.id }}" {% if loop.first %}checked{% endif %}
+                   data-weights="{{ p.weights|tojson|forceescape }}">
             <span class="gm-persona-emoji">{{ p.emoji }}</span>
             <span class="gm-persona-text">
               <span class="gm-persona-name">{{ p.name }}</span>
