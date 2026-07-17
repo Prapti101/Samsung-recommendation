@@ -20,6 +20,32 @@ import os
 import re
 import glob
 
+
+def _load_dotenv(path: str = ".env") -> None:
+    """
+    Read KEY=value lines from a local .env into os.environ for development.
+
+    Real environment variables always win, so a host's dashboard config (Render)
+    is never overridden by a stray local file. Written by hand rather than
+    pulling in python-dotenv: it is ~10 lines and keeps requirements.txt at four
+    entries. .env is gitignored, so it simply does not exist in production.
+    """
+    if not os.path.exists(path):
+        return
+    try:
+        with open(path, encoding="utf-8") as handle:
+            for line in handle:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key.strip(), value.strip())
+    except OSError:
+        pass          # a broken .env must never stop the app booting
+
+
+_load_dotenv()
+
 from feature_engineering import load_engineered_phones
 from personas import PERSONAS, PERSONA_ORDER, list_personas, match_persona_from_text, get_persona
 from recommender import get_top_recommendations, get_full_ranking, generate_budget_change_reasons
@@ -27,6 +53,7 @@ from ai_longevity import compute_ai_longevity
 from ecosystem import get_ecosystem_recommendations
 from community import get_community_insights
 from upgrade import build_upgrade_tiers
+import describe
 
 app = Flask(__name__)
 # Secret key enables server-side session storage (used to remember the last
@@ -332,13 +359,40 @@ def recommend():
         inferred_note = ("Built from your quiz answers \u2014 your priorities were "
                          "translated into the weighting below.")
     elif user_text:
-        # Free-text mode: infer persona + budget from description
-        match = match_persona_from_text(user_text)
-        persona = match["persona"]
-        budget = match["budget"] or (int(budget_raw) if budget_raw else persona["default_budget"])
-        inferred_note = (f"Based on your description, we matched you to the "
-                          f"\"{persona['name']}\" profile "
-                          f"(confidence: {int(match['confidence'] * 100)}%).")
+        # Free-text mode. An LLM reads the sentence and returns the same four
+        # weights + budget the engine already takes; the keyword matcher stays
+        # as the fallback. Nothing about scoring or ranking changes either way.
+        understood = describe.interpret(user_text)
+
+        # Out of scope (an iPhone, a laptop, gibberish). Say so plainly rather
+        # than quietly recommending the nearest Galaxy.
+        if understood and not understood["supported"]:
+            return render_template("results.html", empty_recommend=True,
+                                   refusal=understood["refusal"],
+                                   user_text=user_text)
+
+        if understood:
+            persona = {
+                "id": "described",
+                "name": "Your Description",
+                "emoji": "\U0001F4AC",
+                "default_budget": 60000,
+                "weights": understood["weights"],
+            }
+            budget = (understood["budget"]
+                      or (int(budget_raw) if budget_raw else persona["default_budget"]))
+            # persona["weights"] feeds the shared `weights = dict(persona["weights"])`
+            # below, so the AI's reading reaches the engine by the same path a
+            # built-in persona does. Dragged sliders still override it.
+            inferred_note = understood["summary"] or "Matched from your description."
+        else:
+            # Groq unavailable -> original keyword matcher, unchanged.
+            match = match_persona_from_text(user_text)
+            persona = match["persona"]
+            budget = match["budget"] or (int(budget_raw) if budget_raw else persona["default_budget"])
+            inferred_note = (f"Based on your description, we matched you to the "
+                              f"\"{persona['name']}\" profile "
+                              f"(confidence: {int(match['confidence'] * 100)}%).")
     elif persona_id:
         persona = get_persona(persona_id)
         budget = int(budget_raw) if budget_raw else persona["default_budget"]
@@ -534,22 +588,61 @@ def api_phones():
     return jsonify([_phone_to_dict(row) for _, row in df.iterrows()])
 
 
+# The live hint fires while the user types. Cache by exact text so pausing,
+# backspacing and re-typing the same sentence costs one Groq call, not many.
+_describe_preview_cache = {}
+
+
 @app.route("/api/persona-match", methods=["POST"])
 def api_persona_match():
-    """AJAX endpoint: live-preview which persona a free-text description matches."""
+    """
+    AJAX endpoint: live preview of how the description will be read.
+
+    Uses the SAME interpreter as the actual recommendation (describe.interpret),
+    so the hint can never contradict the result. It previously ran the keyword
+    matcher while the submit path ran the LLM — which would have shown
+    "Detected profile: Photographer" for "I don't care about the camera" and
+    then correctly returned a battery-first phone.
+
+    Falls back to the keyword matcher when Groq is unavailable.
+    """
     text = request.json.get("text", "") if request.is_json else request.form.get("text", "")
-    if not text or len(text.strip()) < 8:
+    text = (text or "").strip()
+    if len(text) < 8:
         return jsonify({"matched": False})
 
-    match = match_persona_from_text(text)
-    return jsonify({
-        "matched": True,
-        "persona_id": match["persona"]["id"],
-        "persona_name": match["persona"]["name"],
-        "emoji": match["persona"]["emoji"],
-        "budget": match["budget"],
-        "confidence": match["confidence"],
-    })
+    if text in _describe_preview_cache:
+        return jsonify(_describe_preview_cache[text])
+
+    understood = describe.interpret(text)
+
+    if understood and not understood["supported"]:
+        payload = {"matched": True, "supported": False,
+                   "refusal": understood["refusal"]}
+    elif understood:
+        # Name the dimension the user cares about most, rather than forcing the
+        # description into one of the six built-in personas.
+        top = max(understood["weights"], key=understood["weights"].get)
+        payload = {
+            "matched": True,
+            "supported": True,
+            "persona_name": understood["summary"] or "your description",
+            "emoji": "\U0001F4AC",
+            "top_priority": top,
+            "budget": understood["budget"],
+        }
+    else:
+        match = match_persona_from_text(text)
+        payload = {
+            "matched": True,
+            "supported": True,
+            "persona_name": match["persona"]["name"],
+            "emoji": match["persona"]["emoji"],
+            "budget": match["budget"],
+        }
+
+    _describe_preview_cache[text] = payload
+    return jsonify(payload)
 
 
 @app.route("/api/simulate-budget", methods=["POST"])

@@ -3375,3 +3375,16 @@ body.gm-embedded #gm-scroll-bg{display:none;}
   /* Card stacks to one column here; keep the photo centred and contained. */
   .gm-more-card{grid-template-columns:1fr;}
 }
+
+/* Echoes back what the user typed when their description can't be served
+   (e.g. they asked for an iPhone), so the refusal is clearly about their words. */
+.gm-empty-reco-quote{
+  font-family:var(--gm-font-display);
+  font-size:1rem; font-style:italic;
+  color:var(--gm-text-muted);
+  background:var(--gm-surface);
+  border:1px solid var(--gm-border-soft);
+  border-radius:var(--gm-radius-sm);
+  padding:12px 16px;
+  margin:0 auto 14px; max-width:520px;
+}

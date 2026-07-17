@@ -190,7 +190,17 @@ document.addEventListener("DOMContentLoaded", () => {
           .then((data) => {
             if (!data.matched) return;
             hintBox.classList.add("gm-hint-active");
-            let msg = `<i class="bi bi-magic"></i> Detected profile: ${data.emoji} <strong>${data.persona_name}</strong>`;
+
+            // The description asks for something we don't stock (an iPhone, a
+            // laptop). Warn here rather than letting them press Enter and land
+            // on a refusal page.
+            if (data.supported === false) {
+              hintBox.innerHTML =
+                '<i class="bi bi-exclamation-circle"></i> ' + data.refusal;
+              return;
+            }
+
+            let msg = `<i class="bi bi-magic"></i> ${data.emoji} <strong>${data.persona_name}</strong>`;
             if (data.budget) {
               msg += ` &middot; Budget: <strong>${gmFormatINR(data.budget)}</strong>`;
             }

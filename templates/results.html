@@ -7,11 +7,25 @@
 <!-- Recommend tab with no recommendation yet — centered empty state -->
 <section class="gm-section gm-recommend-empty">
   <div class="gm-container">
+    {# Two empty states share this block: the plain "nothing yet" one, and the
+       one shown when a description asks for something the catalog cannot serve
+       (an iPhone, a laptop). The second says why, instead of silently handing
+       back the nearest Galaxy. #}
     <div class="gm-empty-reco">
+      {% if refusal %}
+      <div class="gm-empty-reco-icon"><i class="bi bi-chat-square-text"></i></div>
+      <h1 class="gm-empty-reco-title">I can't match that one</h1>
+      {% if user_text %}
+      <p class="gm-empty-reco-quote">“{{ user_text }}”</p>
+      {% endif %}
+      <p class="gm-empty-reco-sub">{{ refusal }}</p>
+      <a href="{{ url_for('home') }}#build" class="btn gm-btn-primary gm-btn-lg">Try another description <i class="bi bi-arrow-right"></i></a>
+      {% else %}
       <div class="gm-empty-reco-icon"><i class="bi bi-magic"></i></div>
       <h1 class="gm-empty-reco-title">No recommendation yet</h1>
       <p class="gm-empty-reco-sub">Tell us how you use your phone and we'll match you with the Galaxy that fits best. Your results will appear right here.</p>
       <a href="{{ url_for('home') }}#build" class="btn gm-btn-primary gm-btn-lg">Start your match <i class="bi bi-arrow-right"></i></a>
+      {% endif %}
     </div>
   </div>
 </section>
@@ -436,9 +450,16 @@
           <i class="bi bi-flag-fill"></i> {{ community.snapshot.bottom_line }}
         </p>
 
+        {# The note states which path actually produced the words above. Both
+           read the same spec data; only the writer differs. Neither has access
+           to real reviews, so neither may claim to speak for owners. #}
         <p class="gm-community-note">
           <i class="bi bi-info-circle"></i>
+          {% if community.ai_generated %}
+          Written by AI (Groq) from this phone's measured specs and scores — not a summary of real user posts.
+          {% else %}
           Generated from this phone's measured specs and scores — not a summary of real user posts.
+          {% endif %}
           Use the sources below for actual community opinion.
         </p>
       </div>
