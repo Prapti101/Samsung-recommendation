@@ -520,5 +520,8 @@
 <script id="recommendation-history-data" type="application/json">{{ history_payload|tojson }}</script>
 <script src="{{ url_for('static', filename='js/results.js') }}"></script>
 <script src="{{ url_for('static', filename='js/insights.js') }}"></script>
+{# Drives the Smarter Upgrade +/- stepper. It was never included, so the
+   stepper's buttons did nothing; the section only ever showed its first tier. #}
+<script src="{{ url_for('static', filename='js/smart_upgrade.js') }}"></script>
 {% endif %}
 {% endblock %}
