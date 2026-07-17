@@ -241,7 +241,10 @@
 
     <script id="gm-insights-data" type="application/json">{{ top3|tojson }}</script>
 
-    {% if upgrade and upgrade.has_any %}
+    {# Shown whenever there is a pick to talk about. Previously gated on
+       has_any, which hid the whole section for budgets where nothing sits
+       within reach — now those increments say "no better upgrade" instead. #}
+    {% if upgrade %}
     <!-- ============================================================
          SECTION · SMARTER UPGRADE — interactive +₹2k…+₹10k stepper.
          The tier data is emitted as JSON and switched client-side by
@@ -254,8 +257,11 @@
         <p class="gm-section-sub">A small increase today can unlock a noticeably better Galaxy experience.</p>
       </div>
 
-      {# First available tier — rendered server-side so the card is never empty. #}
-      {% set first = (upgrade.tiers | selectattr('available') | list) | first %}
+      {# Open on the first increment that unlocks a phone; if none does, fall back
+         to the first increment so the section can still say so rather than
+         disappearing. `first.pick` is guarded below for that case. #}
+      {% set first = ((upgrade.tiers | selectattr('available') | list) | first)
+                     or upgrade.tiers[0] %}
 
       <div class="gm-upgrade-compare">
         <!-- LEFT: current best -->
@@ -289,25 +295,36 @@
         <article class="gm-upgrade-card gm-upgrade-card--better" id="gm-upgrade-better">
           <span class="gm-upgrade-tag gm-upgrade-tag--better"><i class="bi bi-stars"></i> Recommended upgrade</span>
           <div class="gm-upgrade-media">
-            <img class="gm-upgrade-photo" id="gm-up-photo" src="{{ first.pick.image }}" alt="{{ first.pick.model }}">
+            <img class="gm-upgrade-photo" id="gm-up-photo" src="{{ first.pick.image if first.available else '' }}"
+                 alt="{{ first.pick.model if first.available else '' }}"
+                 {% if not first.available %}style="display:none;"{% endif %}>
           </div>
-          <h3 class="gm-upgrade-name" id="gm-up-name">{{ first.pick.model }}</h3>
-          <div class="gm-upgrade-price" id="gm-up-price">₹{{ '{:,}'.format(first.pick.price_inr) }}</div>
-          <div class="gm-upgrade-match gm-upgrade-match--better"><span id="gm-up-match">{{ first.pick.match_score|round|int }}%</span> match</div>
+          <h3 class="gm-upgrade-name" id="gm-up-name">{{ first.pick.model if first.available else 'No better upgrade' }}</h3>
+          <div class="gm-upgrade-price" id="gm-up-price">{{ '₹{:,}'.format(first.pick.price_inr) if first.available else '' }}</div>
+          <div class="gm-upgrade-match gm-upgrade-match--better"><span id="gm-up-match">{{ '{}%'.format(first.pick.match_score|round|int) if first.available else '' }}</span>{{ ' match' if first.available else '' }}</div>
         </article>
       </div>
 
       <!-- Feature + CTA panel (initial = first tier; updated by JS) -->
       <div class="gm-upgrade-panel">
         <p class="gm-upgrade-panel-title">
+          {% if first.available %}
           With <strong id="gm-up-delta">+₹{{ '{:,}'.format(first.delta) }}</strong> you can get the <strong id="gm-up-name2">{{ first.pick.model }}</strong>:
+          {% else %}
+          With <strong id="gm-up-delta">+₹{{ '{:,}'.format(first.delta) }}</strong> there's nothing better<strong id="gm-up-name2"></strong>:
+          {% endif %}
         </p>
         <ul class="gm-upgrade-features" id="gm-up-features">
+          {% if first.available %}
           {% for f in first.features %}
           <li><i class="bi bi-check-circle-fill"></i> {{ f.label }}</li>
           {% endfor %}
+          {% else %}
+          <li><i class="bi bi-info-circle"></i> {{ first.message }}</li>
+          {% endif %}
         </ul>
-        <a class="btn gm-btn-primary gm-btn-lg gm-upgrade-cta" id="gm-up-explore" href="{{ first.explore_url }}" target="_blank" rel="noopener">
+        <a class="btn gm-btn-primary gm-btn-lg gm-upgrade-cta" id="gm-up-explore" href="{{ first.explore_url or '#' }}" target="_blank" rel="noopener"
+           {% if not first.available %}style="display:none;"{% endif %}>
           Explore phone <i class="bi bi-box-arrow-up-right"></i>
         </a>
       </div>

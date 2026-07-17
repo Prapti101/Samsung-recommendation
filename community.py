@@ -215,10 +215,16 @@ def build_sources(phone: dict) -> list:
             "key": "antutu",
             "icon": "bi-speedometer2",
             "label": "AnTuTu Benchmark",
-            "meta": "benchmark scores",
-            "blurb": "Real performance numbers to sanity-check the chipset.",
-            "url": "https://www.google.com/search?q={}".format(
-                quote_plus("{} AnTuTu benchmark score".format(name))),
+            "meta": "antutu.com",
+            "blurb": "Live performance rankings to sanity-check the chipset.",
+            # AnTuTu's own site, not a Google search for it.
+            #
+            # This link is the one card that cannot be phone-specific: antutu.com
+            # has no site search at all (no form, no search endpoint — the
+            # /search.htm?q= URL returns 200 but ignores the query and never
+            # mentions the phone). So it opens their live performance ranking,
+            # which is the page that actually answers "how fast is this chipset".
+            "url": "https://www.antutu.com/web/ranking",
         },
         {
             "key": "amazon",

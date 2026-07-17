@@ -21,38 +21,22 @@ happened to score best — a more expensive jump than the user asked to consider
 "Nearest above current" is what makes the suggestion a genuine next step.
 """
 
-# How many budget steps the stepper offers, and how big each one is as a share
-# of the current pick's price.
+# The budget increments the stepper walks, in rupees above the current pick.
 #
-# These used to be fixed at ₹2,000…₹10,000, which broke once recommender.py
-# started picking from a budget band. The band puts the #1 pick at the TOP of
-# the user's budget, and price gaps up there are large — from a ₹59,999 phone
-# the next model up is ₹74,999, a ₹15,000 jump. Every fixed step topped out at
-# ₹10,000, so no tier could reach anything and the whole section disappeared.
+# The ladder runs to ₹15,000 rather than stopping at ₹10,000 because of a real
+# gap in Samsung's price list: above ₹40,000 the catalog jumps in large strides
+# (₹59,999 -> ₹74,999 -> ₹94,999). With a ₹10,000 ceiling, a ₹59,999 pick could
+# not reach ANY better phone, so every tier came back empty and the whole
+# section vanished — for 30 of 48 budget/persona combinations.
 #
-# Scaling with price keeps the steps meaningful at both ends: ~₹1,500 increments
-# for a ₹26,000 phone, ~₹3,000 for a ₹60,000 one, ~₹5,000 for a ₹1,00,000 one.
-UPGRADE_STEP_COUNT = 5
-UPGRADE_STEP_FRACTION = 0.05      # one step ≈ 5% of the current price
+# Steps that still reach nothing are no longer dropped: they are kept and
+# labelled (see UPGRADE_NO_MATCH_TEMPLATE), because "nothing better for +₹2,000"
+# is itself a useful, honest answer — and far better than the section silently
+# disappearing.
+UPGRADE_STEPS_INR = (2000, 4000, 6000, 8000, 10000, 15000)
 
-
-def upgrade_steps_for(price: int) -> tuple:
-    """
-    Purpose : Budget increments to offer for a phone at this price.
-    Inputs  : price of the current #1 pick, in INR.
-    Output  : Ascending tuple of rupee amounts.
-    Algorithm: One step is ~5% of the price, rounded to a friendly increment
-              (₹500 below ₹2,000, otherwise ₹1,000) so the UI shows "+₹3,000"
-              rather than "+₹2,999.95". Steps are multiples of that unit.
-    """
-    raw = price * UPGRADE_STEP_FRACTION
-    rounding = 500 if raw < 2000 else 1000
-    unit = max(rounding, int(round(raw / rounding) * rounding))
-    return tuple(unit * n for n in range(1, UPGRADE_STEP_COUNT + 1))
-
-
-# Kept for callers that want the historic fixed ladder (and for tests).
-UPGRADE_STEPS_INR = (2000, 4000, 6000, 8000, 10000)
+# Shown on a step that unlocks nothing better.
+UPGRADE_NO_MATCH_TEMPLATE = "No better Galaxy for +₹{delta:,} — your pick is the best at this price."
 
 # A dimension score must improve by at least this much (0-10 scale) before it is
 # worth telling the user about. Below this the difference is noise, not a reason
@@ -163,47 +147,42 @@ def build_upgrade_tiers(current: dict, catalog: list, feature_list_fn,
     dimension — paying more for nothing is not an upgrade.
     """
     if steps is None:
-        steps = upgrade_steps_for(current["price_inr"])
-
-    # Each rung of the stepper must be a DIFFERENT phone, otherwise clicking "+"
-    # changes the rupee label while the suggestion underneath stays put — which
-    # reads as broken. Walking the improving phones cheapest-first and taking
-    # each new one gives a real ladder: the smallest worthwhile step, then the
-    # next distinct option, and so on.
-    improving = [
-        phone for phone in sorted(catalog, key=lambda p: (p["price_inr"], p["phone_id"]))
-        if phone["price_inr"] > current["price_inr"] and describe_gains(current, phone)
-    ]
+        steps = UPGRADE_STEPS_INR
 
     tiers = []
-    seen_ids = set()
-    for phone in improving:
-        if phone["phone_id"] in seen_ids:
-            continue
-        seen_ids.add(phone["phone_id"])
-        tiers.append({
-            # The exact extra rupees this phone costs — the real gap, which is
-            # what the user actually has to find, not a rounded step.
-            "delta": phone["price_inr"] - current["price_inr"],
-            "price_delta": phone["price_inr"] - current["price_inr"],
-            "new_budget": phone["price_inr"],
-            "available": True,
-            "pick": phone,
-            "features": feature_list_fn(phone),
-            "gains": describe_gains(current, phone),
-            "explore_url": phone["official_url"],
-        })
-        if len(tiers) >= len(steps):
-            break
+    for step in steps:
+        ceiling = current["price_inr"] + step
+        pick = find_nearest_upgrade(current, catalog, ceiling)
 
-    # The stepper still expects a fixed number of rungs; pad the tail when the
-    # catalog runs out of better phones so the UI can grey those out.
-    while len(tiers) < len(steps):
-        tiers.append({"delta": steps[len(tiers)], "new_budget": None, "available": False})
+        if pick:
+            tiers.append({
+                "delta": step,
+                "new_budget": ceiling,
+                "available": True,
+                "pick": pick,
+                # The exact extra rupees this phone costs — the real gap the
+                # user must find, not the round step they clicked.
+                "price_delta": pick["price_inr"] - current["price_inr"],
+                "features": feature_list_fn(pick),
+                "gains": describe_gains(current, pick),
+                "explore_url": pick["official_url"],
+            })
+        else:
+            # Kept, not dropped: the step is a real question ("what does
+            # +₹2,000 buy me?") and "nothing better" is a real answer.
+            tiers.append({
+                "delta": step,
+                "new_budget": ceiling,
+                "available": False,
+                "message": UPGRADE_NO_MATCH_TEMPLATE.format(delta=step),
+            })
 
     return {
         "current": current,
         "current_explore_url": current["official_url"],
         "tiers": tiers,
+        # True when at least one step unlocks something — the section still
+        # hides for the single most expensive phone, where every step would
+        # otherwise repeat "nothing better".
         "has_any": any(tier["available"] for tier in tiers),
     }
